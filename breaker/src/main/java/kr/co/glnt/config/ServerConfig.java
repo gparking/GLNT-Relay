@@ -22,5 +22,4 @@ public class ServerConfig {
     private String ngisUrl;
     private String serverName;
     private String fileErrPath;
-
 }

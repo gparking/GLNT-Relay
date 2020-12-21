@@ -28,6 +28,8 @@ public enum BreakerManager {
         }
     }
 
+    // sync인데 왜 queue를 쓰니
+    // previous CarGroup 을 하나 만들어서 queue 에서 poll 한 값과 비교.
     private static Queue<CarGroup> entranceFrontQueue = new LinkedList<>(); // 전방 LPR Event Queue
     private static Queue<CarGroup> entranceBackQueue = new LinkedList<>();  // 후방 LPR Event Queue
 
@@ -35,6 +37,7 @@ public enum BreakerManager {
     public void addNewGroupInFrontQueue(CarInfo carInfo) {
         CarGroup currentCarGroup = new CarGroup(carInfo);
         entranceFrontQueue.offer(currentCarGroup);
+        entranceBackQueue.offer(currentCarGroup);
     }
 
     public void addOcrInfoInGroup(CarInfo carInfo) {
@@ -49,7 +52,7 @@ public enum BreakerManager {
     public void addNewGroupInBackQueue() {
         CarGroup carGroup = entranceFrontQueue.poll();
         if (Objects.nonNull(carGroup)) {
-            entranceBackQueue.offer(carGroup);
+
         }
     }
 

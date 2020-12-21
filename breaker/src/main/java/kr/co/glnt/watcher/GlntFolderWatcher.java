@@ -30,7 +30,6 @@ public class GlntFolderWatcher implements Runnable {
         watchFolder.register(service, StandardWatchEventKinds.ENTRY_CREATE);
 
         log.info(">>> {} Monitoring Start", parkinglotInfo.getImagePath());
-
     }
 
     @SneakyThrows
@@ -45,6 +44,7 @@ public class GlntFolderWatcher implements Runnable {
                 if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
                     break;
                 }
+                // File 생성 후 파일 생성시간을 체크.
                 StringBuilder builder = new StringBuilder();
                 String fileName = event.context().toString();
                 String fullPath = builder.append(parkinglotInfo.getImagePath())

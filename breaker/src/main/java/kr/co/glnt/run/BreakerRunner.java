@@ -31,7 +31,6 @@ public class BreakerRunner implements ApplicationRunner {
         this.ngisAPI = ngisAPI;
     }
 
-
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // 1. get parking lot info data

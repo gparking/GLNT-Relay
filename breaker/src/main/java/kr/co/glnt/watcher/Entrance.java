@@ -12,9 +12,10 @@ import java.util.TimerTask;
 /**
  * 입차 전방 이벤트 처리를 담당하는 클래스.
  */
+// TODO: 입차 카운트 관련 확인.
 @Slf4j
 public class Entrance extends Breaker {
-    private long lastRegTime = System.currentTimeMillis();  // 최종 입차 시간.
+    private long lastRegTime = System.currentTimeMillis();  // todo: 최종 파일 생성 시간으로 변경.
     private int MAX_TIME = 1000;    // 발생하는 이벤트들을 하나로 취급할 시간. (현재는 1초)
 
     public Entrance(ParkinglotInfo parkinglotInfo) {
@@ -26,7 +27,7 @@ public class Entrance extends Breaker {
     public void startProcessing(String fullPath) {
         // TODO: GPMS SVR 로 파일전송 (base64 || multipart)
         // 1. 이벤트 발생 시간
-        long currentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis(); // 사진 생성 시간을 기준으로
         BreakerManager manager = BreakerManager.valueOf(parkinglotInfo.getGateLprType());
 
         // 2. ocr
@@ -61,7 +62,7 @@ public class Entrance extends Breaker {
         }
     }
 
-    boolean isNewCarEnters(long currentTime) {
+    private boolean isNewCarEnters(long currentTime) {
         return (currentTime - lastRegTime) > MAX_TIME;
     }
 
