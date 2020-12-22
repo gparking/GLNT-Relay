@@ -39,6 +39,7 @@ public class DisplayMessage {
                 messageList.add(message);
             }
         }
+        
         return messageList;
     }
 }
