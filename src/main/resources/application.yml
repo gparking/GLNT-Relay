@@ -1,0 +1,9 @@
+server:
+  port: 9999
+
+spring:
+  server-config:
+    gpms-url: "http://ec2-54-180-8-134.ap-northeast-2.compute.amazonaws.com:7000"
+    ngis-url: "http://localhost:7777"
+    server-name: "GATESVR1"
+    file-err-path: "C:\\park\\error"

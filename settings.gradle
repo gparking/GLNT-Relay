@@ -1,11 +1,5 @@
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-    }
-}
-
 rootProject.name = 'glnt-relay'
 
-include 'breaker'
+
 
 
