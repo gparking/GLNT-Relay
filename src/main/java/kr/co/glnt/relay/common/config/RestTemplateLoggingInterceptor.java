@@ -1,6 +1,7 @@
 package kr.co.glnt.relay.common.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
@@ -17,7 +18,9 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body,
                                         ClientHttpRequestExecution execution) throws IOException {
-        request.getHeaders().set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        HttpHeaders headers = request.getHeaders();
+        headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        headers.setBasicAuth("", "");
         URI uri = request.getURI();
 //        traceRequest(request, body);
         ClientHttpResponse response = execution.execute(request, body);

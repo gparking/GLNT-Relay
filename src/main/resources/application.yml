@@ -7,3 +7,11 @@ spring:
     ngis-url: "http://localhost:7777"
     server-name: "GATESVR1"
     file-err-path: "C:\\park\\error"
+    breaker-command:
+      open: "GATE UP"
+      close: "GATE DOWN"
+      upLock: "GATE UPLOCK"
+      unLock: "GATE UNLOCK"
+
+  mvc:
+    throw-exception-if-no-handler-found: true
