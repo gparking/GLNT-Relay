@@ -36,4 +36,8 @@ public class FacilityInfo {
                 : this.gateType;
     }
 
+    public String getHost() {
+        return String.format("%s:%d", ip, port);
+    }
+
 }

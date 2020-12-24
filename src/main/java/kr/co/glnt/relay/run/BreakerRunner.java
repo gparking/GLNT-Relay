@@ -9,14 +9,17 @@ import kr.co.glnt.relay.breaker.watcher.GlntFolderWatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 /**
  * 애플리케션 실행시 동작하는 Runner 클래스
  */
+@Order(1)
 @Slf4j
 @Component
 public class BreakerRunner implements ApplicationRunner {

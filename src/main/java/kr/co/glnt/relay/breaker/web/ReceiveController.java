@@ -39,8 +39,7 @@ public class ReceiveController {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach( msg -> {
-            log.info("display msg: {}", msg);
-            client.sendMessage(facilityInfo.getIp(), msg);
+            client.sendMessage(facilityInfo.getHost(), msg);
         });
     }
 
@@ -57,6 +56,6 @@ public class ReceiveController {
         if (Objects.isNull(result))
             throw new GlntBadRequestException("잘못된 명령어입니다.");
 
-        client.sendMessage(facilityInfo.getIp(), String.format("0x02%s0x03", result));
+        client.sendMessage(facilityInfo.getHost(), String.format("0x02%s0x03", result));
     }
 }

@@ -7,15 +7,10 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 @Component
 public class BreakerClient {
@@ -23,7 +18,7 @@ public class BreakerClient {
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
 
     public void setFeatureCount(int featureCount) {
-        if (loopGroup == null) {
+        if (Objects.isNull(loopGroup)) {
             loopGroup = new NioEventLoopGroup(featureCount);
         }
     }
@@ -37,7 +32,6 @@ public class BreakerClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8), new StringEncoder(CharsetUtil.UTF_16));
                             pipeline.addLast(new BreakerMessageHandler());
                         }
                     });
@@ -63,7 +57,7 @@ public class BreakerClient {
                 }
             });
 
-            channelMap.put(host, channelFuture.channel());
+            channelMap.put(String.format("%s:%d", host, port), channelFuture.channel());
         } catch (Exception e) {
             e.printStackTrace();
             reconnect(host, port);
@@ -80,6 +74,7 @@ public class BreakerClient {
     }
 
     public void sendMessage(String host, String msg) {
+        System.out.println(host);
         if (!channelMap.containsKey(host)) {
             return;
         }
