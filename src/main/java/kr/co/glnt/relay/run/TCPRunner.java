@@ -2,7 +2,7 @@ package kr.co.glnt.relay.run;
 
 import kr.co.glnt.relay.breaker.dto.FacilityInfo;
 import kr.co.glnt.relay.common.config.ServerConfig;
-import kr.co.glnt.relay.tcp.client.BreakerClient;
+import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -18,9 +18,9 @@ import java.util.stream.Collectors;
 public class TCPRunner implements ApplicationRunner {
 
     private final ServerConfig serverConfig;
-    private final BreakerClient client;
+    private final GlntNettyClient client;
 
-    public TCPRunner(ServerConfig serverConfig, BreakerClient client) {
+    public TCPRunner(ServerConfig serverConfig, GlntNettyClient client) {
         this.serverConfig = serverConfig;
         this.client = client;
     }

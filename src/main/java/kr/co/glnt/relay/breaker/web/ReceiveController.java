@@ -4,28 +4,22 @@ import kr.co.glnt.relay.breaker.dto.DisplayMessage;
 import kr.co.glnt.relay.breaker.dto.FacilityInfo;
 import kr.co.glnt.relay.breaker.exception.GlntBadRequestException;
 import kr.co.glnt.relay.common.config.ServerConfig;
-import kr.co.glnt.relay.common.dto.ResponseDTO;
-import kr.co.glnt.relay.tcp.client.BreakerClient;
+import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @Slf4j
 @RestController
 public class ReceiveController {
 
-    private final BreakerClient client;
+    private final GlntNettyClient client;
     private final ServerConfig serverConfig;
 
-    public ReceiveController(BreakerClient client, ServerConfig serverConfig) {
+    public ReceiveController(GlntNettyClient client, ServerConfig serverConfig) {
         this.client = client;
         this.serverConfig = serverConfig;
     }

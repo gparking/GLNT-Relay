@@ -1,4 +1,4 @@
-package kr.co.glnt.relay.tcp.client;
+package kr.co.glnt.relay.tcp;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class BreakerClient {
+public class GlntNettyClient {
     private static NioEventLoopGroup loopGroup;
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
 
@@ -32,7 +32,7 @@ public class BreakerClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new BreakerMessageHandler());
+                            pipeline.addLast(new GlntNettyHandler());
                         }
                     });
             ChannelFuture channelFuture = bootstrap.connect().sync();
