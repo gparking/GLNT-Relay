@@ -29,6 +29,7 @@ public class FacilityInfo {
     private String createdBy;
     private String updateBy;
     private String fname;
+    private boolean opened;     // 차단기 상태
 
     public String getGateLprType() {
         return Objects.nonNull(this.lprType)
@@ -36,4 +37,16 @@ public class FacilityInfo {
                 : this.gateType;
     }
 
+    public String getHost() {
+        return String.format("%s:%d", ip, port);
+    }
+
+    public void setBreakerState(String command) {
+        switch (command) {
+            case "GATE UPLOCK":
+                opened = true;
+            default:
+                opened = false;
+        }
+    }
 }

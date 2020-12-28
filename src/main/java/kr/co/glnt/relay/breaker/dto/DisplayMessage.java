@@ -32,9 +32,9 @@ public class DisplayMessage {
 
         List<String> messageList = new ArrayList<>();
         for (int i = 0; i < map.size(); i++) {
-            List<DisplayMessageInfo> infoList = map.get(i);
-            for(int j = 0; j < infoList.size(); j++) {
-                DisplayMessageInfo info = infoList.get(j);
+            List<DisplayMessageInfo> messageInfos = map.get(i);
+            for(int j = 0; j < messageInfos.size(); j++) {
+                DisplayMessageInfo info = messageInfos.get(j);
                 String message = String.format(messageFormat.get(info.getLine()), info.getColor(), info.getText());
                 messageList.add(message);
             }

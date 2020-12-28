@@ -1,14 +1,14 @@
-package kr.co.glnt.relay.tcp.client;
+package kr.co.glnt.relay.tcp;
 
-import io.netty.channel.*;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ChannelHandler.Sharable
-public class BreakerMessageHandler extends SimpleChannelInboundHandler<String> {
+public class GlntNettyHandler extends SimpleChannelInboundHandler<String> {
 
     // 연결 성공
     @Override

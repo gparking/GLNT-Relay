@@ -3,7 +3,7 @@ package kr.co.glnt.relay.breaker.watcher;
 import kr.co.glnt.relay.breaker.dto.EventInfo;
 import kr.co.glnt.relay.breaker.dto.FacilityInfo;
 import kr.co.glnt.relay.breaker.service.Breaker;
-import kr.co.glnt.relay.breaker.service.BreakerManager;
+import kr.co.glnt.relay.breaker.service.BreakerFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,39 +37,31 @@ public class GlntFolderWatcher implements Runnable {
     @SneakyThrows
     @Override
     public void run() {
-
-        Breaker breaker = BreakerManager.getInstance(facilityInfo);
+        Breaker breaker = BreakerFactory.getInstance(facilityInfo);
         for (;;) {
             WatchKey key = null;
             key = service.take();
             List<WatchEvent<?>> events = key.pollEvents();
             for (WatchEvent<?> event: events) {
                 WatchEvent.Kind<?> kind = event.kind();
-                if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) continue;
-                switch (BreakerManager.valueOf(facilityInfo.getGateLprType())) {
+                if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
+                    continue;
+                }
+
+                String fullPath = getFullPath(event);
+
+                switch (BreakerFactory.valueOf(facilityInfo.getGateLprType())) {
+                    // 입차 전방일 경우 이벤트 발생 시간을 정확하게 체크하기 위해 멀티스레드로 동작.
+                    // 보조 LPR 이 달려있을 경우는 이렇게 진행해야 정확.
+                    // 우선 보조 LPR 이 입차 전방에만 있다고 가정하여 이렇게 해놨지만
+                    // 추후 어떻게 될지 모르니 설계면에서 다시 생각 해봐야 함.
                     case INFRONT:
+                    case OUTFRONT:
                         new Thread(() -> {
-                            // File 생성 후 파일 생성시간을 체크.
-                            StringBuilder builder = new StringBuilder();
-                            String fileName = event.context().toString();
-                            String fullPath = builder.append(facilityInfo.getImagePath())
-                                    .append("\\")
-                                    .append(fileName)
-                                    .toString();
                             breaker.startProcessing(new EventInfo(fullPath));
                         }).start();
                         break;
-
-
                     default:
-                        // File 생성 후 파일 생성시간을 체크.
-                        StringBuilder builder = new StringBuilder();
-                        String fileName = event.context().toString();
-                        String fullPath = builder.append(facilityInfo.getImagePath())
-                                .append("\\")
-                                .append(fileName)
-                                .toString();
-//                    breaker.startProcessing(fullPath);
                         breaker.startProcessing(new EventInfo(fullPath));
                         break;
                 }
@@ -78,5 +70,12 @@ public class GlntFolderWatcher implements Runnable {
         }
     }
 
-
+    private String getFullPath(WatchEvent<?> event) {
+        StringBuilder builder = new StringBuilder();
+        String fileName = event.context().toString();
+        return builder.append(facilityInfo.getImagePath())
+                .append("\\")
+                .append(fileName)
+                .toString();
+    }
 }

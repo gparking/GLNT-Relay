@@ -4,28 +4,22 @@ import kr.co.glnt.relay.breaker.dto.DisplayMessage;
 import kr.co.glnt.relay.breaker.dto.FacilityInfo;
 import kr.co.glnt.relay.breaker.exception.GlntBadRequestException;
 import kr.co.glnt.relay.common.config.ServerConfig;
-import kr.co.glnt.relay.common.dto.ResponseDTO;
-import kr.co.glnt.relay.tcp.client.BreakerClient;
+import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @Slf4j
 @RestController
 public class ReceiveController {
 
-    private final BreakerClient client;
+    private final GlntNettyClient client;
     private final ServerConfig serverConfig;
 
-    public ReceiveController(BreakerClient client, ServerConfig serverConfig) {
+    public ReceiveController(GlntNettyClient client, ServerConfig serverConfig) {
         this.client = client;
         this.serverConfig = serverConfig;
     }
@@ -39,8 +33,7 @@ public class ReceiveController {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach( msg -> {
-            log.info("display msg: {}", msg);
-            client.sendMessage(facilityInfo.getIp(), msg);
+            client.sendMessage(facilityInfo.getHost(), msg);
         });
     }
 
@@ -50,13 +43,13 @@ public class ReceiveController {
      */
     @GetMapping("/v1/breaker/{facilityId}/{command}")
     public void breakerBarOpenTask(@PathVariable("facilityId") String facilityId,
-                                   @PathVariable("command") String command) throws GlntBadRequestException {
+                                   @PathVariable("command") String breakerCommand) throws GlntBadRequestException {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(facilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();
-        String result = commandMap.get(command);
-        if (Objects.isNull(result))
+        String command = commandMap.get(breakerCommand);
+        if (Objects.isNull(command))
             throw new GlntBadRequestException("잘못된 명령어입니다.");
 
-        client.sendMessage(facilityInfo.getIp(), String.format("0x02%s0x03", result));
+        client.sendMessage(facilityInfo.getHost(), String.format("0x02%s0x03", command));
     }
 }
