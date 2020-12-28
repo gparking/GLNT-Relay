@@ -43,13 +43,13 @@ public class ReceiveController {
      */
     @GetMapping("/v1/breaker/{facilityId}/{command}")
     public void breakerBarOpenTask(@PathVariable("facilityId") String facilityId,
-                                   @PathVariable("command") String command) throws GlntBadRequestException {
+                                   @PathVariable("command") String breakerCommand) throws GlntBadRequestException {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(facilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();
-        String result = commandMap.get(command);
-        if (Objects.isNull(result))
+        String command = commandMap.get(breakerCommand);
+        if (Objects.isNull(command))
             throw new GlntBadRequestException("잘못된 명령어입니다.");
 
-        client.sendMessage(facilityInfo.getHost(), String.format("0x02%s0x03", result));
+        client.sendMessage(facilityInfo.getHost(), String.format("0x02%s0x03", command));
     }
 }

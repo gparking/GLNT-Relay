@@ -63,29 +63,6 @@ public class BreakerRunner implements ApplicationRunner {
             watcherThread.setName(value.get(0).getGateLprType());
             watcherThread.start();
         });
-
-//        new Thread(new EntranceQueue(ngisAPI)).start();
-
-
-//        for (;;) {
-//            for (int i = 0; i < 5; i++) {
-//                File file = new File("C:\\park\\"+ i +".jpg");
-//                FileUtils.moveFile(file, new File("C:\\park\\in_front\\" +i+ ".jpg"));
-//            }
-//
-//            Thread.sleep(2000);
-//
-//            for (int i = 0; i < 5; i++) {
-//                File file = new File("C:\\park\\"+ i +".jpg");
-//                FileUtils.moveFile(new File("C:\\park\\in_front\\" +i+ ".jpg"), file);
-//            }
-//
-//            Thread.sleep(2000);
-//
-//        }
-
-
-
     }
 
 }

@@ -4,16 +4,16 @@ package kr.co.glnt.relay.breaker.dto;
 import lombok.Data;
 
 /**
- * 자동차 정보 클래스 (이벤트로 보아도 무방.)
+ * 자동차 정보 클래스
  */
 @Data
 public class CarInfo {
-    private int code;           // OCR 결과 코드
-    private String number;      // OCR 로 인식된 번호.
-    private String fullPath;    // 사진 전체경로
-    private long inDate;        // 입차 시간.
-    private String facilitiesId;// 들어온 게이트 아이디.
-    private boolean state = false;
+    private int code;               // OCR 결과 코드
+    private String number;          // OCR 로 인식된 번호.
+    private String fullPath;        // 사진 전체경로
+    private long inDate;            // 입차 시간.
+    private String facilitiesId;    // 들어온 게이트 아이디.
+    private boolean state = false;  // 처리 상태값
 
     public void setCode(int code) {
         this.code = code;

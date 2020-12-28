@@ -9,7 +9,6 @@ import java.util.UUID;
 public class EventInfoGroup {
     private String key;
     private final List<EventInfo> eventList;
-    private CarInfo entranceFrontCar;   // api 에 사용된 차량
 
 
     public EventInfoGroup(List<EventInfo> eventList) {

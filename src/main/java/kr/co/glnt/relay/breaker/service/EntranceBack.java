@@ -6,6 +6,7 @@ import kr.co.glnt.relay.breaker.dto.EventInfoGroup;
 import kr.co.glnt.relay.breaker.dto.FacilityInfo;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -28,16 +29,13 @@ public class EntranceBack extends Breaker {
     @Override
     public void startProcessing(EventInfo eventInfo) {
         try {
-            EventInfoGroup frontEventGroup = EventQueueManager.pollEntranceBackQueue();
-            if (Objects.isNull(frontEventGroup)) {
+            EventInfoGroup frontBackEventGroup = EventQueueManager.pollEntranceBackQueue();
+            if (Objects.isNull(frontBackEventGroup)) {
                 return;
             }
-            CarInfo carInfo = ngisAPI.requestOCR(eventInfo.getFullPath());
-            carInfo.setInDate(eventInfo.getCreatedTime());
-            carInfo.setFullPath(eventInfo.getFullPath());
-            carInfo.setFacilitiesId(facilityInfo.getFacilitiesId());
+            List<CarInfo> carInfos = getCurrentGroupEventList(frontBackEventGroup);
 
-            gpmsAPI.requestEntranceCar(frontEventGroup.getKey(), carInfo);
+            gpmsAPI.requestEntranceCar(frontBackEventGroup.getKey(), carInfos.get(0));
         }
         catch (Exception e) {
             log.error("입차 - 후방 에러", e.getMessage());

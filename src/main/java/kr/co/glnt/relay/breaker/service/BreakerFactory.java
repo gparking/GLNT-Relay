@@ -4,12 +4,12 @@ import kr.co.glnt.relay.breaker.dto.FacilityInfo;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public enum BreakerManager {
+public enum BreakerFactory {
     OUTFRONT, INBACK, INFRONT;
 
     public static Breaker getInstance(FacilityInfo facilityInfo) {
         String type = facilityInfo.getGateLprType();
-        switch (BreakerManager.valueOf(type)) {
+        switch (BreakerFactory.valueOf(type)) {
             case INFRONT:
                 return new Entrance(facilityInfo);
             case INBACK:
