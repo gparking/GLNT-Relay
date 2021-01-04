@@ -8,14 +8,24 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.CharsetUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+@Slf4j
 @Component
 public class GlntNettyClient {
     private static NioEventLoopGroup loopGroup;
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
+
+    private final SimpMessagingTemplate webSocket;
+
+    public GlntNettyClient(SimpMessagingTemplate webSocket) {
+        this.webSocket = webSocket;
+    }
 
     public void setFeatureCount(int featureCount) {
         if (Objects.isNull(loopGroup)) {
@@ -32,7 +42,7 @@ public class GlntNettyClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new GlntNettyHandler());
+                            pipeline.addLast(new GlntNettyHandler(webSocket));
                         }
                     });
             ChannelFuture channelFuture = bootstrap.connect().sync();
@@ -59,16 +69,15 @@ public class GlntNettyClient {
 
             channelMap.put(String.format("%s:%d", host, port), channelFuture.channel());
         } catch (Exception e) {
-            e.printStackTrace();
             reconnect(host, port);
         }
     }
 
-    private void reconnect(String host, int port) {
+    private void reconnect(String ip, int port) {
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                connect(host, port);
+                connect(ip, port);
             }
         }, 1000);
     }
@@ -82,6 +91,11 @@ public class GlntNettyClient {
         ByteBuf byteBuf = Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8);
 
         channel.writeAndFlush(byteBuf);
+    }
+
+
+    public static Map<String, Channel> getChannelMap() {
+        return channelMap;
     }
 
 

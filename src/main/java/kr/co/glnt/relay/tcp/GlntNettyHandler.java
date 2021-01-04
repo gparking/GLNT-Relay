@@ -5,23 +5,33 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 @Slf4j
 @ChannelHandler.Sharable
 public class GlntNettyHandler extends SimpleChannelInboundHandler<String> {
 
+    private final SimpMessagingTemplate webSocket;
+
+    public GlntNettyHandler(SimpMessagingTemplate webSocket) {
+        this.webSocket = webSocket;
+    }
+
     // 연결 성공
+    // webSocket 에 연결된 client 에게 연결 성공 되었다고 전송
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        log.info("연결 성공 : {}", channel.remoteAddress());
+        webSocket.convertAndSend("/subscribe/connect", "connect");
     }
 
     // 연결 종료
+    // webSocket 에 연결된 client 에게 연결 종료 되었다고 전송
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        log.info("연결 종료 : {}", channel.remoteAddress());
+        String remoteAddr = channel.remoteAddress().toString();
+        webSocket.convertAndSend("/subscribe/disconnect", "disconnect");
     }
 
     @Override
