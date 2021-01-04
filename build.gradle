@@ -30,6 +30,8 @@ dependencies {
     implementation 'org.springframework.retry:spring-retry'
     implementation 'org.modelmapper:modelmapper:2.3.0'
     implementation 'commons-io:commons-io:2.6' // image file encode
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
 
 
     compile group: 'io.netty', name: 'netty-all', version: '4.1.42.Final'

@@ -1,11 +1,11 @@
 package kr.co.glnt.relay.run;
 
-import kr.co.glnt.relay.breaker.web.GpmsAPI;
-import kr.co.glnt.relay.breaker.web.NgisAPI;
-import kr.co.glnt.relay.common.config.ServerConfig;
-import kr.co.glnt.relay.breaker.dto.FacilityInfo;
-import kr.co.glnt.relay.breaker.dto.FacilityInfoPayload;
-import kr.co.glnt.relay.breaker.watcher.GlntFolderWatcher;
+import kr.co.glnt.relay.web.GpmsAPI;
+import kr.co.glnt.relay.web.NgisAPI;
+import kr.co.glnt.relay.config.ServerConfig;
+import kr.co.glnt.relay.dto.FacilityInfo;
+import kr.co.glnt.relay.dto.FacilityInfoPayload;
+import kr.co.glnt.relay.watcher.GlntFolderWatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -26,7 +26,6 @@ public class BreakerRunner implements ApplicationRunner {
     private final ServerConfig config;
     private final GpmsAPI gpmsAPI;
     private final NgisAPI ngisAPI;
-    public static Queue<String> entranceQueue = new LinkedList<>();
 
     public BreakerRunner(ServerConfig config, GpmsAPI gpmsAPI, NgisAPI ngisAPI) {
         this.config = config;
@@ -42,6 +41,7 @@ public class BreakerRunner implements ApplicationRunner {
             log.error("주차장 게이트정보 조회를 실패하여 프로그램을 종료합니다.");
             System.exit(0);
         }
+
         config.setFacilityList(facilityList);
 
         int isOpen = ngisAPI.requestNgisOpen();
@@ -60,9 +60,8 @@ public class BreakerRunner implements ApplicationRunner {
         parkingGroup.forEach((key, value) -> {
             GlntFolderWatcher watcher = new GlntFolderWatcher(value.get(0));
             Thread watcherThread = new Thread(watcher);
-            watcherThread.setName(value.get(0).getGateLprType());
+            watcherThread.setName(value.get(0).generateGateLprType());
             watcherThread.start();
         });
     }
-
 }
