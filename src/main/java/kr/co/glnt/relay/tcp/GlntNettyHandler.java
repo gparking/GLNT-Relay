@@ -39,6 +39,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<String> {
         log.info("receive msg : {}", msg);
     }
 
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         log.info("TCP ERR => remoteAddress : {}", ctx.channel().remoteAddress());

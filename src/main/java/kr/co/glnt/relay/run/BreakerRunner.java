@@ -1,18 +1,22 @@
 package kr.co.glnt.relay.run;
 
-import kr.co.glnt.relay.web.GpmsAPI;
-import kr.co.glnt.relay.web.NgisAPI;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
-import kr.co.glnt.relay.dto.FacilityInfoPayload;
 import kr.co.glnt.relay.watcher.GlntFolderWatcher;
+import kr.co.glnt.relay.web.GpmsAPI;
+import kr.co.glnt.relay.web.NgisAPI;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -36,7 +40,8 @@ public class BreakerRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // 1. get parking lot info data
-        List<FacilityInfo> facilityList = gpmsAPI.getParkinglotData(new FacilityInfoPayload(config.getServerName()));
+//        List<FacilityInfo> facilityList = gpmsAPI.getParkinglotData(new FacilityInfoPayload(config.getServerName()));
+        List<FacilityInfo> facilityList = new ObjectMapper().readValue(new ClassPathResource("facilities.json").getFile(), new TypeReference<List<FacilityInfo>>(){});
         if (Objects.isNull(facilityList) || facilityList.size() == 0) {
             log.error("주차장 게이트정보 조회를 실패하여 프로그램을 종료합니다.");
             System.exit(0);

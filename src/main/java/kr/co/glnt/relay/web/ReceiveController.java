@@ -2,10 +2,10 @@ package kr.co.glnt.relay.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
+import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.exception.GlntBadRequestException;
-import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,7 +73,10 @@ public class ReceiveController {
         List<FacilityInfo> list = channelMap.values().stream()
                 .map(channel -> {
                     boolean channelActive = channel.isActive();
-                    FacilityInfo info = serverConfig.findFacilityInfoByPort(channel.remoteAddress().toString());
+                    String remote = channel.remoteAddress().toString();
+                    String host = remote.substring(0, remote.indexOf("/")) + remote.substring(remote.indexOf(":"));
+                    // TODO: 나중엔 remoteAddress 로 변경
+                    FacilityInfo info = serverConfig.findFacilityInfoByPort(host);
                     info.setState(channelActive);
                     return info;
                 }).collect(Collectors.toList());
