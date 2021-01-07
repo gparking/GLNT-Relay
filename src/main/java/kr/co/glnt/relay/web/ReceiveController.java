@@ -41,6 +41,7 @@ public class ReceiveController {
      */
     @PostMapping("/v1/display/show")
     public void showDisplay(@RequestBody DisplayMessage message) throws GlntBadRequestException {
+        log.info("message: {}", message);
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach( msg -> {

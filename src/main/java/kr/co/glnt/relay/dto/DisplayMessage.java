@@ -1,14 +1,13 @@
 package kr.co.glnt.relay.dto;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
+@Slf4j
 public class DisplayMessage {
     private String facilityId;
     private List<DisplayMessageInfo> messages;
@@ -27,19 +26,20 @@ public class DisplayMessage {
     private final List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
 
     public List<String> generateMessageList() {
-        Map<Integer, List<DisplayMessageInfo>> map = messages.stream()
-                .collect(Collectors.groupingBy(DisplayMessageInfo::getOrder));
+        Collections.sort(messages, new Comparator<DisplayMessageInfo>() {
+            @Override
+            public int compare(DisplayMessageInfo d1, DisplayMessageInfo d2) {
+                return d1.getOrder() > d2.getOrder() ? 1 : -1;
+            }
+        });
 
         List<String> messageList = new ArrayList<>();
-        for (int i = 0; i < map.size(); i++) {
-            List<DisplayMessageInfo> messageInfos = map.get(i);
-            for(int j = 0; j < messageInfos.size(); j++) {
-                DisplayMessageInfo info = messageInfos.get(j);
-                String message = String.format(messageFormat.get(info.getLine()), info.getColor(), info.getText());
-                messageList.add(message);
-            }
+        for(int j = 0; j < messages.size(); j++) {
+            DisplayMessageInfo info = messages.get(j);
+            String message = String.format(messageFormat.get(info.getLine()), info.getColor(), info.getText());
+            messageList.add(message);
         }
-        
+
         return messageList;
     }
 }
