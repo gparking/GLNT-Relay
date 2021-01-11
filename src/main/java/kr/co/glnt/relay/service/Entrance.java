@@ -7,6 +7,9 @@ import kr.co.glnt.relay.dto.FacilityInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static java.util.Map.Entry.comparingByValue;
@@ -50,6 +53,7 @@ public class Entrance extends Breaker {
 
     protected TimerTask task() {
         return new TimerTask() {
+            @SneakyThrows
             @Override
             public void run() {
                 EventInfoGroup eventGroup = EventQueueManager.pollEntranceFrontQueue();

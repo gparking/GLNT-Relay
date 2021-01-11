@@ -50,8 +50,7 @@ public class Exit extends Breaker {
 
                 CarInfo carInfo = getCarInfoToBeTransmit(carInfos);
 
-
-                // TODO: 출차 api
+                gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
             }
         };
     }

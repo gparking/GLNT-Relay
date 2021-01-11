@@ -66,8 +66,8 @@ public class ReceiveController {
     @PostMapping("/v1/parkinglot/paystation")
     public void parkingCostCalculator(@RequestBody PayStationInfo payStationInfo) {
         log.info("payStationInfo : {}", objectMapper.writeValueAsString(payStationInfo));
-        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(payStationInfo.getFacilityId());
-        client.sendMessage(facilityInfo.generateHost(), objectMapper.writeValueAsString(payStationInfo.getData()));
+
+        client.sendMessage(payStationInfo.getFacilityId(), objectMapper.writeValueAsString(payStationInfo.getData()));
     }
 
     /**

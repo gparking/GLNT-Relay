@@ -1,5 +1,6 @@
 package kr.co.glnt.relay.tcp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -8,8 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.CharsetUtil;
+import kr.co.glnt.relay.config.ServerConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
@@ -22,9 +23,13 @@ public class GlntNettyClient {
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
 
     private final SimpMessagingTemplate webSocket;
+    private final ObjectMapper objectMapper;
+    private final ServerConfig config;
 
-    public GlntNettyClient(SimpMessagingTemplate webSocket) {
+    public GlntNettyClient(SimpMessagingTemplate webSocket, ObjectMapper objectMapper, ServerConfig serverConfig) {
         this.webSocket = webSocket;
+        this.objectMapper = objectMapper;
+        this.config = serverConfig;
     }
 
     public void setFeatureCount(int featureCount) {
@@ -42,7 +47,7 @@ public class GlntNettyClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new GlntNettyHandler(webSocket));
+                            pipeline.addLast(new GlntNettyHandler(webSocket, objectMapper, config));
                         }
                     });
             ChannelFuture channelFuture = bootstrap.connect().sync();

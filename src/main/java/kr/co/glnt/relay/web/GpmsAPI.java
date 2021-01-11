@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.ResponseDTO;
-import kr.co.glnt.relay.dto.ParkInPayload;
+import kr.co.glnt.relay.dto.ParkInOutPayload;
 import kr.co.glnt.relay.dto.FacilityInfoPayload;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -59,12 +62,36 @@ public class GpmsAPI {
     @Async
     public void requestEntranceCar(String key, CarInfo carInfo) {
         try {
-            ParkInPayload payload = new ParkInPayload(key, carInfo);
-            template.postForObject("/v1/vehicle/parkin", payload, ResponseDTO.class);
+            ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
+            template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
+
+            deleteImageFile(carInfo);
         }
         catch (IOException e) {
             log.error("입차 이미지 전송 실패", e);
         }
     }
+
+    @Async
+    public void requestExitCar(String key, CarInfo carInfo) {
+        try {
+            ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
+            template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
+
+            deleteImageFile(carInfo);
+        }
+        catch (IOException e) {
+            log.error("출차 이미지 전송 실패", e);
+        }
+    }
+
+    // TODO: 공통 클래스 추출시 옮길것
+    private void deleteImageFile(CarInfo carInfo) throws IOException {
+        Path filePath = Paths.get(carInfo.getFullPath());
+        if (Files.exists(filePath)) {
+            Files.delete(Paths.get(filePath.toString()));
+        }
+    }
+
 }
 

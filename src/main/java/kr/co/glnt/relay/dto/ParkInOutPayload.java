@@ -15,7 +15,7 @@ import java.util.TimeZone;
  * 차량 입차 요청에 쓰이는 클래스
  */
 @Data
-public class ParkInPayload {
+public class ParkInOutPayload {
     private String uuid;
     private String vehicleNo;       // 인식된 차량번호 (Default: "", Success: 차량번호)
     private String facilitiesId;    // 장치 아이디(어디 게이트에 어떤차단기)
@@ -25,7 +25,7 @@ public class ParkInPayload {
     private LocalDateTime inDate;   // 차량 입차 시간
     private String base64Str;       // 사진파일 encode
 
-    public ParkInPayload(String key, CarInfo carInfo) throws IOException {
+    public ParkInOutPayload(String key, CarInfo carInfo) throws IOException {
         uuid = key;
         vehicleNo = carInfo.getNumber();
         facilitiesId = carInfo.getFacilitiesId();
