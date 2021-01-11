@@ -83,6 +83,7 @@ public class GlntNettyClient {
     }
 
     public void sendMessage(String host, String msg) {
+        log.info("send msg : {}", msg);
         if (!channelMap.containsKey(host)) {
             return;
         }

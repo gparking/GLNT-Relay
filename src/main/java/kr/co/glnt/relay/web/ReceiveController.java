@@ -5,6 +5,8 @@ import io.netty.channel.Channel;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
+import kr.co.glnt.relay.dto.FacilityInfoPayload;
+import kr.co.glnt.relay.dto.PayStationInfo;
 import kr.co.glnt.relay.exception.GlntBadRequestException;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.SneakyThrows;
@@ -26,13 +28,22 @@ public class ReceiveController {
     private final ServerConfig serverConfig;
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final ObjectMapper objectMapper;
+    private final GpmsAPI gpmsAPI;
 
     public ReceiveController(GlntNettyClient client, ServerConfig serverConfig,
-                             SimpMessagingTemplate simpMessagingTemplate, ObjectMapper objectMapper) {
+                             SimpMessagingTemplate simpMessagingTemplate, ObjectMapper objectMapper, GpmsAPI gpmsAPI) {
         this.client = client;
         this.serverConfig = serverConfig;
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.objectMapper = objectMapper;
+        this.gpmsAPI = gpmsAPI;
+    }
+
+    @GetMapping("/v1/parkinglot/facility/refresh")
+    public void facilityInfoRefresh() {
+        List<FacilityInfo> list = gpmsAPI.getParkinglotData(new FacilityInfoPayload(serverConfig.getServerName()));
+        log.info("list : {}", list);
+        serverConfig.setFacilityList(list);
     }
 
     /**
@@ -41,7 +52,6 @@ public class ReceiveController {
      */
     @PostMapping("/v1/display/show")
     public void showDisplay(@RequestBody DisplayMessage message) throws GlntBadRequestException {
-        log.info("message: {}", message);
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach( msg -> {
@@ -49,6 +59,16 @@ public class ReceiveController {
         });
     }
 
+    /**
+     * 정산기 메세지 명령
+     */
+    @SneakyThrows
+    @PostMapping("/v1/parkinglot/paystation")
+    public void parkingCostCalculator(@RequestBody PayStationInfo payStationInfo) {
+        log.info("payStationInfo : {}", objectMapper.writeValueAsString(payStationInfo));
+        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(payStationInfo.getFacilityId());
+        client.sendMessage(facilityInfo.generateHost(), objectMapper.writeValueAsString(payStationInfo.getData()));
+    }
 
     /**
      * 게이트 차단기 명령
@@ -66,7 +86,6 @@ public class ReceiveController {
     }
 
 
-    // TODO: WebSocket 첫 연결 시 디바이스 상태 정보 알려줘야함
     @SneakyThrows
     @MessageMapping("/status-list")
     public void connection() {

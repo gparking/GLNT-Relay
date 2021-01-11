@@ -12,17 +12,6 @@ public class DisplayMessage {
     private String facilityId;
     private List<DisplayMessageInfo> messages;
 
-    @Data
-    private static class DisplayMessageInfo {
-        private String color;
-        private String text;
-        private int order;
-        private int line;
-
-        public DisplayMessageInfo() {}
-    }
-
-
     private final List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
 
     public List<String> generateMessageList() {
@@ -41,5 +30,15 @@ public class DisplayMessage {
         }
 
         return messageList;
+    }
+
+    @Data
+    public class DisplayMessageInfo {
+        private String color;
+        private String text;
+        private int order;
+        private int line;
+
+        public DisplayMessageInfo() {}
     }
 }
