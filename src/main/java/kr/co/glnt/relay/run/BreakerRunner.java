@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
+import kr.co.glnt.relay.dto.FacilityInfoPayload;
 import kr.co.glnt.relay.watcher.GlntFolderWatcher;
 import kr.co.glnt.relay.web.GpmsAPI;
 import kr.co.glnt.relay.web.NgisAPI;
@@ -40,19 +41,14 @@ public class BreakerRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // 1. get parking lot info data
-//        List<FacilityInfo> facilityList = gpmsAPI.getParkinglotData(new FacilityInfoPayload(config.getServerName()));
-        List<FacilityInfo> facilityList = new ObjectMapper().readValue(new ClassPathResource("facilities.json").getFile(), new TypeReference<List<FacilityInfo>>(){});
-        if (Objects.isNull(facilityList) || facilityList.size() == 0) {
-            log.error("주차장 게이트정보 조회를 실패하여 프로그램을 종료합니다.");
-            System.exit(0);
-        }
-
+        List<FacilityInfo> facilityList = gpmsAPI.getParkinglotData(new FacilityInfoPayload(config.getServerName()));
+//        List<FacilityInfo> facilityList = new ObjectMapper().readValue(new ClassPathResource("facilities.json").getFile(), new TypeReference<List<FacilityInfo>>(){});
         config.setFacilityList(facilityList);
 
         int isOpen = ngisAPI.requestNgisOpen();
         if (isOpen < 0) {
             log.error("인식 모듈 연결이 실패했습니다.");
-            System.exit(0);
+
         }
 
         // 2. data grouping (in gate / out gate)

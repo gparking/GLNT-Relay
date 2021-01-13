@@ -1,6 +1,7 @@
 package kr.co.glnt.relay.dto;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -22,6 +23,7 @@ public class DisplayMessage {
             }
         });
 
+
         List<String> messageList = new ArrayList<>();
         for(int j = 0; j < messages.size(); j++) {
             DisplayMessageInfo info = messages.get(j);
@@ -32,13 +34,11 @@ public class DisplayMessage {
         return messageList;
     }
 
-    @Data
-    public class DisplayMessageInfo {
+    @Data @NoArgsConstructor
+    private static class DisplayMessageInfo {
         private String color;
         private String text;
         private int order;
         private int line;
-
-        public DisplayMessageInfo() {}
     }
 }

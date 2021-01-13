@@ -15,6 +15,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,7 +56,7 @@ public class ReceiveController {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach( msg -> {
-            client.sendMessage(facilityInfo.generateHost(), msg);
+            client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"));
         });
     }
 
@@ -67,7 +68,7 @@ public class ReceiveController {
     public void parkingCostCalculator(@RequestBody PayStationInfo payStationInfo) {
         log.info("payStationInfo : {}", objectMapper.writeValueAsString(payStationInfo));
 
-        client.sendMessage(payStationInfo.getFacilityId(), objectMapper.writeValueAsString(payStationInfo.getData()));
+        client.sendMessage(payStationInfo.getFacilityId(), objectMapper.writeValueAsString(payStationInfo.getData()), Charset.forName("ASCII"));
     }
 
     /**
@@ -82,7 +83,8 @@ public class ReceiveController {
         if (Objects.isNull(command))
             throw new GlntBadRequestException("잘못된 명령어입니다.");
 
-        client.sendMessage(facilityInfo.generateHost(), String.format("0x02%s0x03", command));
+        char stx = 0x02, etx = 0x03;
+        client.sendMessage(facilityInfo.generateHost(), String.format("%s%s%s", stx, command, etx), Charset.forName("ASCII"));
     }
 
 

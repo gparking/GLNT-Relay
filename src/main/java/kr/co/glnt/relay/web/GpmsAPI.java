@@ -65,9 +65,9 @@ public class GpmsAPI {
             ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
             template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
 
-            deleteImageFile(carInfo);
+//            deleteImageFile(carInfo);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             log.error("입차 이미지 전송 실패", e);
         }
     }
@@ -78,9 +78,9 @@ public class GpmsAPI {
             ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
             template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
 
-            deleteImageFile(carInfo);
+//            deleteImageFile(carInfo);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             log.error("출차 이미지 전송 실패", e);
         }
     }

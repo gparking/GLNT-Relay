@@ -14,7 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -87,13 +91,15 @@ public class GlntNettyClient {
         }, 1000);
     }
 
-    public void sendMessage(String host, String msg) {
+    public void sendMessage(String host, String msg, Charset charset) {
         log.info("send msg : {}", msg);
         if (!channelMap.containsKey(host)) {
+            log.info("없는 시설물 아이디");
             return;
         }
         Channel channel = channelMap.get(host);
-        ByteBuf byteBuf = Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8);
+//        byte[] message = msg.getBytes(StandardCharsets.UTF_8);
+        ByteBuf byteBuf = Unpooled.copiedBuffer(msg, charset);
 
         channel.writeAndFlush(byteBuf);
     }

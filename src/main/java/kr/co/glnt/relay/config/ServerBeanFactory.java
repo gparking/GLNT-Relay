@@ -45,7 +45,7 @@ public class ServerBeanFactory {
     public RestTemplate generateRestTemplate(String url) {
         SimpleClientHttpRequestFactory clientHttpRequestFactory = new SimpleClientHttpRequestFactory();
         clientHttpRequestFactory.setReadTimeout(5000);
-        clientHttpRequestFactory.setConnectTimeout(1000);
+        clientHttpRequestFactory.setConnectTimeout(5000);
 
         RestTemplate restTemplate = new RestTemplate(new BufferingClientHttpRequestFactory(clientHttpRequestFactory)) {
             @Override

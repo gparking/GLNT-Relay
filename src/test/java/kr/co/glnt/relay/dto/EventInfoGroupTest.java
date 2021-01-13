@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 public class EventInfoGroupTest {
 
     @Test
@@ -15,5 +13,9 @@ public class EventInfoGroupTest {
         StringBuilder builder = new StringBuilder(uuid.toString());
         builder.append(LocalDateTime.now());
         System.out.println("uuid: " + builder.toString());
+
+        char stx = 0x02;
+        char etx = 0x03;
+        System.out.println(String.format("%stest%s", stx, etx));
     }
 }
