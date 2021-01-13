@@ -41,8 +41,8 @@ public class BreakerRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         // 1. get parking lot info data
-        List<FacilityInfo> facilityList = gpmsAPI.getParkinglotData(new FacilityInfoPayload(config.getServerName()));
-//        List<FacilityInfo> facilityList = new ObjectMapper().readValue(new ClassPathResource("facilities.json").getFile(), new TypeReference<List<FacilityInfo>>(){});
+//        List<FacilityInfo> facilityList = gpmsAPI.getParkinglotData(new FacilityInfoPayload(config.getServerName()));
+        List<FacilityInfo> facilityList = new ObjectMapper().readValue(new ClassPathResource("facilities.json").getFile(), new TypeReference<List<FacilityInfo>>(){});
         config.setFacilityList(facilityList);
 
         int isOpen = ngisAPI.requestNgisOpen();

@@ -8,6 +8,8 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.Delimiters;
 import io.netty.util.CharsetUtil;
 import kr.co.glnt.relay.config.ServerConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -97,10 +99,8 @@ public class GlntNettyClient {
             log.info("없는 시설물 아이디");
             return;
         }
-        Channel channel = channelMap.get(host);
-//        byte[] message = msg.getBytes(StandardCharsets.UTF_8);
         ByteBuf byteBuf = Unpooled.copiedBuffer(msg, charset);
-
+        Channel channel = channelMap.get(host);
         channel.writeAndFlush(byteBuf);
     }
 

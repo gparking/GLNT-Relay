@@ -13,8 +13,6 @@ import kr.co.glnt.relay.dto.FacilityInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -55,13 +53,14 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         String message = byteBufToString(msg);
         if (message.contains("GATE")) {
-            receiveBreakerMessage(message);
+            receiveBreakerMessage(ctx.channel(), message);
             return;
         }
 
-        // 정산기.
-        receivePayStationMessage(ctx.channel(), message);
-
+        if (message.equals("정산기")) {
+            // 정산기.
+            receivePayStationMessage(ctx.channel(), message);
+        }
     }
 
 
@@ -82,9 +81,40 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     // 차단기에서 메세지 수신
-    public void receiveBreakerMessage(String message) {
+    public void receiveBreakerMessage(Channel channel, String message) {
+        FacilityInfo facilityInfo = config.findFacilityInfoByHost(channel.remoteAddress().toString().substring(1));
         String msg = MESSAGE.matcher(message).replaceAll("");
+
+        if (facilityInfo.getFname().equals("출구")) {
+            exitBreakerTask(facilityInfo, channel, msg);
+        }
+
         log.info("차단기 메세지 수신 : {}", msg);
+        facilityInfo.setBarStatus(msg);
+
+    }
+
+    // 출차 차단기 작업.
+    private void exitBreakerTask(FacilityInfo facilityInfo, Channel channel, String msg) {
+        // 정상적으로 게이트가 올라갔을 경우 시설물 고장이 아님
+        if (msg.contains("GATE UP OK")) {
+            facilityInfo.setPassCount(0);
+        }
+
+        if (msg.contains("GATE DOWN ACTION")) {
+            String barStatus = facilityInfo.getBarStatus();
+            if (barStatus.equals("GATE UP OK")) {
+                int passCount = facilityInfo.getPassCount() + 1;
+                facilityInfo.setPassCount(passCount);
+
+                if (passCount > 3) {
+                    // api 호출.
+                    String facilityId = facilityInfo.getFacilitiesId();
+                    // TODO: "F", 시설물 아이디, 메세지
+
+                }
+            }
+        }
     }
 
     // 정산기에서 메세지 수신
@@ -102,7 +132,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             case "payment": // 결제 응답 (결제 결과)
                 // 127.0.0.1:7979
                 String host = channel.remoteAddress().toString();
-                FacilityInfo facilityInfo = config.findFacilityInfoByPort(host);
+                FacilityInfo facilityInfo = config.findFacilityInfoByHost(host);
                 //facilityInfo.getFacilitiesId(); pathvariable URI
 
                 /**

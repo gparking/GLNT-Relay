@@ -30,7 +30,7 @@ public class ServerConfig {
                 .orElseThrow(() -> new GlntBadRequestException("시설아이디를 확인해주세요."));
     }
 
-    public FacilityInfo findFacilityInfoByPort(String host) {
+    public FacilityInfo findFacilityInfoByHost(String host) {
         return facilityList
                 .stream()
                 .filter(info -> info.generateHost().equals(host))

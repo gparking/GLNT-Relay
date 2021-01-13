@@ -14,6 +14,7 @@ spring:
       close: "GATE DOWN"
       upLock: "GATE UPLOCK"
       unLock: "GATE UNLOCK"
+      health: "STATUS"
 
   mvc:
     throw-exception-if-no-handler-found: true

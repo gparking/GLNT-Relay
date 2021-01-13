@@ -29,8 +29,9 @@ public class FacilityInfo {
     private String createdBy;
     private String updateBy;
     private String fname;
-    private boolean opened;     // 차단기 상태
-    private boolean state;
+    private String barStatus = "init";     // 차단기 Open/Close/UpLock
+    private int passCount;
+    private boolean state;      // 차단기 전원 상태
 
     public String generateGateLprType() {
         return Objects.nonNull(this.lprType)
@@ -40,14 +41,5 @@ public class FacilityInfo {
 
     public String generateHost() {
         return String.format("%s:%d", ip, port);
-    }
-
-    public void setBreakerState(String command) {
-        switch (command) {
-            case "GATE UPLOCK":
-                opened = true;
-            default:
-                opened = false;
-        }
     }
 }
