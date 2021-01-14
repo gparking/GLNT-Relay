@@ -22,7 +22,7 @@ public class ServerConfig {
     private Map<String, String> breakerCommand;
 
 
-    public FacilityInfo findByFacilitiesId(String facilitiesId) throws GlntBadRequestException {
+    public FacilityInfo findByFacilitiesId(String facilitiesId) {
         return facilityList
                 .stream()
                 .filter(info->info.getFacilitiesId().equals(facilitiesId))

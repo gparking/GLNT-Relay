@@ -13,14 +13,15 @@ import org.springframework.context.ApplicationContext;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 // 차단기 부모.
 @Slf4j
 public abstract class Breaker {
     protected long lastRegTime = System.currentTimeMillis();
-    protected final int MAX_TIME = 1000;    // 발생하는 이벤트들을 하나로 취급할 시간
-    protected final int TIMER_TIME = 1000;
+    protected int maxTime = 1000;    // 발생하는 이벤트들을 하나로 취급할 시간
+    protected int timerTime = 1000;
     // 주차장 정보. (차단기, 정산기 등..)
     protected FacilityInfo facilityInfo;
     protected NgisAPI ngisAPI;
@@ -44,7 +45,7 @@ public abstract class Breaker {
      * 지정한 시간내에 들어온 차량인지 확인 (같은 차량)
      */
     protected boolean isNewCarEnters(long currentTime) {
-        return (currentTime - lastRegTime) > MAX_TIME;
+        return (currentTime - lastRegTime) > maxTime;
     }
 
 
@@ -83,14 +84,15 @@ public abstract class Breaker {
         String carNumber = null;
         // OCR 이 인식된 값들을 차량번호를 키로 하여 map으로 변환.
         Map<String, List<CarInfo>> carMap = carInfos.stream()
-                .filter(CarInfo::ocrValidate)   // 정상 처리된 차량
+                .filter(CarInfo::ocrValidate)   // 정상 인식된 차량
                 .collect(Collectors.groupingBy(CarInfo::getNumber));
 
         // 인식된 번호중 더 많이 찍힌 차량번호를 추출.
-        carNumber = carMap.entrySet().stream()
-                .max((entry1, entry2) -> entry1.getValue().size() > entry2.getValue().size() ? 1 : -1)
-                .get()
-                .getKey();
+        Optional<Map.Entry<String, List<CarInfo>>> maxCarInfo = carMap.entrySet().stream()
+                .max((entry1, entry2) -> entry1.getValue().size() > entry2.getValue().size() ? 1 : -1);
+        if (maxCarInfo.isPresent()) {
+            carNumber = maxCarInfo.get().getKey();
+        }
 
         // 차량 정보 가져오기
         return carMap.get(carNumber).get(0);

@@ -8,24 +8,18 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
-import io.netty.util.CharsetUtil;
 import kr.co.glnt.relay.config.ServerConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class GlntNettyClient {
-    private static NioEventLoopGroup loopGroup;
+    private NioEventLoopGroup loopGroup;
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
 
     private final SimpMessagingTemplate webSocket;

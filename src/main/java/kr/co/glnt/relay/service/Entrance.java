@@ -1,18 +1,15 @@
 package kr.co.glnt.relay.service;
 
+import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.EventInfo;
 import kr.co.glnt.relay.dto.EventInfoGroup;
-import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-
-import static java.util.Map.Entry.comparingByValue;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * 입차 전방 이벤트 처리를 담당하는 클래스.
@@ -48,7 +45,7 @@ public class Entrance extends Breaker {
      * 타이머 설정.
      */
     private void startTimer() {
-        new Timer().schedule(task(), TIMER_TIME);
+        new Timer().schedule(task(), timerTime);
     }
 
     protected TimerTask task() {

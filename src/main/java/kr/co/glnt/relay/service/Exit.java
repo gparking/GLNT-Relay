@@ -38,7 +38,7 @@ public class Exit extends Breaker {
 
 
     private void startTimer() {
-        new Timer().schedule(task(), TIMER_TIME);
+        new Timer().schedule(task(), timerTime);
     }
 
     protected TimerTask task() {

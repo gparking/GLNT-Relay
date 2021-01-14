@@ -107,7 +107,8 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 if (passCount > 3) {
                     // api 호출.
                     String facilityId = facilityInfo.getFacilitiesId();
-                    // TODO: "F", 시설물 아이디, 메세지
+                    log.info(facilityId);
+                    // note: "F", 시설물 아이디, 메세지
 
                 }
             }
@@ -127,7 +128,6 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 /**
                  */
             case "payment": // 결제 응답 (결제 결과)
-                // 127.0.0.1:7979
                 String host = channel.remoteAddress().toString();
                 FacilityInfo facilityInfo = config.findFacilityInfoByHost(host);
                 log.info("facilityInfo : {}", facilityInfo);
@@ -143,6 +143,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                  *
                  *
                  */
+                break;
             case "paymentFailure":
             case "healthCheck":
             default:

@@ -30,11 +30,12 @@ public class TCPRunner implements ApplicationRunner {
         List<FacilityInfo> facilityInfos = serverConfig.getFacilityList().stream()
                 .filter(info -> info.getPort() > 0)
                 .collect(Collectors.toList());
+
         client.setFeatureCount(facilityInfos.size());
-        facilityInfos.forEach(info -> {
-            client.connect(info.getIp(), info.getPort());
-//            client.connect("127.0.0.1", info.getPort());
-        });
+
+        facilityInfos.forEach(info ->
+            client.connect(info.getIp(), info.getPort())
+        );
 
 
 

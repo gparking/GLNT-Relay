@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.client.RestClientException;
@@ -50,7 +49,7 @@ public class ServerBeanFactory {
         RestTemplate restTemplate = new RestTemplate(new BufferingClientHttpRequestFactory(clientHttpRequestFactory)) {
             @Override
             @Retryable(value = RestClientException.class, maxAttempts = 3, backoff = @Backoff(delay = 100))
-            public <T> T postForObject(URI url, Object request, Class<T> responseType) throws RestClientException {
+            public <T> T postForObject(URI url, Object request, Class<T> responseType) {
                 return super.postForObject(url, request, responseType);
             }
         };
