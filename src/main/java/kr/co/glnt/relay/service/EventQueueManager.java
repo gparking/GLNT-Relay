@@ -20,6 +20,11 @@ public class EventQueueManager {
     // 출차 이벤트 큐
     private static Queue<EventInfoGroup> exitQueue = new LinkedList<>();
 
+
+    private EventQueueManager() {
+        throw new IllegalStateException("Utility class");
+    }
+
     /**
      * 새로운 입차차량 그룹을 생성 후 큐에 추가.
      */

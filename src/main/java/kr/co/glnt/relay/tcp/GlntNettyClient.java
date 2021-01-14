@@ -96,7 +96,7 @@ public class GlntNettyClient {
     public void sendMessage(String host, String msg, Charset charset) {
         log.info("send msg : {}", msg);
         if (!channelMap.containsKey(host)) {
-            log.info("없는 시설물 아이디");
+            log.info("없는 시설물 아이디: {}", host);
             return;
         }
         ByteBuf byteBuf = Unpooled.copiedBuffer(msg, charset);

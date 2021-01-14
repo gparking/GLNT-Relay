@@ -36,7 +36,6 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     // webSocket 에 연결된 client 에게 연결 성공 되었다고 전송
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Channel channel = ctx.channel();
         webSocket.convertAndSend("/subscribe/connect", "connect");
     }
 
@@ -44,8 +43,6 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     // webSocket 에 연결된 client 에게 연결 종료 되었다고 전송
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        Channel channel = ctx.channel();
-        String remoteAddr = channel.remoteAddress().toString();
         webSocket.convertAndSend("/subscribe/disconnect", "disconnect");
     }
 
@@ -86,7 +83,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         String msg = MESSAGE.matcher(message).replaceAll("");
 
         if (facilityInfo.getFname().equals("출구")) {
-            exitBreakerTask(facilityInfo, channel, msg);
+            exitBreakerTask(facilityInfo, msg);
         }
 
         log.info("차단기 메세지 수신 : {}", msg);
@@ -95,7 +92,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     // 출차 차단기 작업.
-    private void exitBreakerTask(FacilityInfo facilityInfo, Channel channel, String msg) {
+    private void exitBreakerTask(FacilityInfo facilityInfo, String msg) {
         // 정상적으로 게이트가 올라갔을 경우 시설물 고장이 아님
         if (msg.contains("GATE UP OK")) {
             facilityInfo.setPassCount(0);
@@ -133,6 +130,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 // 127.0.0.1:7979
                 String host = channel.remoteAddress().toString();
                 FacilityInfo facilityInfo = config.findFacilityInfoByHost(host);
+                log.info("facilityInfo : {}", facilityInfo);
                 //facilityInfo.getFacilitiesId(); pathvariable URI
 
                 /**

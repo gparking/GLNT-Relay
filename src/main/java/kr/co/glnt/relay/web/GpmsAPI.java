@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,20 +43,17 @@ public class GpmsAPI {
     @SneakyThrows
     public List<FacilityInfo> getParkinglotData(FacilityInfoPayload facilityInfoPayload) {
         ResponseEntity<ResponseDTO> response = template.postForEntity("/v1/parkinglot/facility/list", facilityInfoPayload, ResponseDTO.class);
-        if (Objects.isNull(response)) return null;
+        if (Objects.isNull(response)) return Collections.emptyList();
         HttpStatus status = HttpStatus.resolve(response.getStatusCodeValue());
-        switch (status) {
-            case OK:
-                ResponseDTO responseDTO = response.getBody();
-                try {
-                    return objectMapper.convertValue(responseDTO.getData(), new TypeReference<List<FacilityInfo>>() {});
-                }
-                catch (Exception e) {
-                    log.error("주차장정보 데이터 변환 실패", e);
-                }
-            default:
-                return null;
+        if (status == HttpStatus.OK) {
+            ResponseDTO responseDTO = response.getBody();
+            try {
+                return objectMapper.convertValue(responseDTO.getData(), new TypeReference<List<FacilityInfo>>() {});
+            } catch (Exception e) {
+                log.error("주차장정보 데이터 변환 실패", e);
+            }
         }
+        return Collections.emptyList();
     }
 
 
@@ -63,11 +61,11 @@ public class GpmsAPI {
     public void requestEntranceCar(String key, CarInfo carInfo) {
         try {
             ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
-            template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
-
-//            deleteImageFile(carInfo);
-        }
-        catch (Exception e) {
+            ResponseDTO response = template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
+            if (response.getCode() == HttpStatus.CREATED.value()) {
+                deleteImageFile(carInfo);
+            }
+        } catch (Exception e) {
             log.error("입차 이미지 전송 실패", e);
         }
     }
@@ -76,20 +74,20 @@ public class GpmsAPI {
     public void requestExitCar(String key, CarInfo carInfo) {
         try {
             ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
-            template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
-
-//            deleteImageFile(carInfo);
-        }
-        catch (Exception e) {
+            ResponseDTO response = template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
+            if (response.getCode() == HttpStatus.CREATED.value()) {
+                deleteImageFile(carInfo);
+            }
+        } catch (Exception e) {
             log.error("출차 이미지 전송 실패", e);
         }
     }
 
-    // TODO: 공통 클래스 추출시 옮길것
+    // todo: 공통 클래스 추출시 옮길것
     private void deleteImageFile(CarInfo carInfo) throws IOException {
         Path filePath = Paths.get(carInfo.getFullPath());
-        if (Files.exists(filePath)) {
-            Files.delete(Paths.get(filePath.toString()));
+        if (filePath.toFile().exists()) {
+            Files.delete(filePath);
         }
     }
 

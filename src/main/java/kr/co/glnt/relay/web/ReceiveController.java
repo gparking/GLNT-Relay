@@ -55,9 +55,9 @@ public class ReceiveController {
     public void showDisplay(@RequestBody DisplayMessage message) throws GlntBadRequestException {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
-        messageList.forEach( msg -> {
-            client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"));
-        });
+        messageList.forEach( msg ->
+            client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"))
+        );
     }
 
     /**
@@ -83,7 +83,8 @@ public class ReceiveController {
         if (Objects.isNull(command))
             throw new GlntBadRequestException("잘못된 명령어입니다.");
 
-        char stx = 0x02, etx = 0x03;
+        char stx = 0x02;
+        char etx = 0x03;
         client.sendMessage(facilityInfo.generateHost(), String.format("%s%s%s", stx, command, etx), Charset.forName("ASCII"));
     }
 
