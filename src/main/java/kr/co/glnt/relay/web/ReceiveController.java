@@ -52,7 +52,7 @@ public class ReceiveController {
      * @param message
      */
     @PostMapping("/v1/display/show")
-    public void showDisplay(@RequestBody DisplayMessage message) throws GlntBadRequestException {
+    public void showDisplay(@RequestBody DisplayMessage message) {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach( msg ->
@@ -76,7 +76,7 @@ public class ReceiveController {
      */
     @GetMapping("/v1/breaker/{facilityId}/{command}")
     public void breakerBarOpenTask(@PathVariable("facilityId") String facilityId,
-                                   @PathVariable("command") String breakerCommand) throws GlntBadRequestException {
+                                   @PathVariable("command") String breakerCommand) {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(facilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();
         String command = commandMap.get(breakerCommand);
@@ -98,7 +98,7 @@ public class ReceiveController {
                     boolean channelActive = channel.isActive();
                     String remote = channel.remoteAddress().toString();
                     String host = remote.substring(0, remote.indexOf('/')) + remote.substring(remote.indexOf(':'));
-                    // TODO: 나중엔 remoteAddress 로 변경
+                    // note: 나중엔 remoteAddress 로 변경
                     FacilityInfo info = serverConfig.findFacilityInfoByHost(host);
                     info.setState(channelActive);
                     return info;

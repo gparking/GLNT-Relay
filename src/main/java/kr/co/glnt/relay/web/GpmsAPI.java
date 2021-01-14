@@ -83,7 +83,7 @@ public class GpmsAPI {
         }
     }
 
-    // todo: 공통 클래스 추출시 옮길것
+    // note: 공통 클래스 추출시 옮길것
     private void deleteImageFile(CarInfo carInfo) throws IOException {
         Path filePath = Paths.get(carInfo.getFullPath());
         if (filePath.toFile().exists()) {

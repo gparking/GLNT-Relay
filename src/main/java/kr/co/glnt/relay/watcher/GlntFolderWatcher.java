@@ -26,7 +26,7 @@ public class GlntFolderWatcher implements Runnable {
         facilityInfo = facilityInfoList;
         service = FileSystems.getDefault().newWatchService();
         watchFolder = Paths.get(facilityInfo.getImagePath());
-        if (!Files.exists(watchFolder)) {
+        if (!watchFolder.toFile().exists()) {
             Files.createDirectories(watchFolder);
         }
         watchFolder.register(service, StandardWatchEventKinds.ENTRY_CREATE);
@@ -57,9 +57,9 @@ public class GlntFolderWatcher implements Runnable {
                     // 추후 어떻게 될지 모르니 설계면에서 다시 생각 해봐야 함.
                     case INFRONT:
                     case OUTFRONT:
-                        new Thread(() -> {
-                            breaker.startProcessing(new EventInfo(fullPath));
-                        }).start();
+                        new Thread(() ->
+                            breaker.startProcessing(new EventInfo(fullPath))
+                        ).start();
                         break;
                     default:
                         breaker.startProcessing(new EventInfo(fullPath));
