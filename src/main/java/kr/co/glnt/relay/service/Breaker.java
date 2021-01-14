@@ -67,7 +67,7 @@ public abstract class Breaker {
      * 입차 요청할 차량정보 추출
      */
     protected CarInfo getCarInfoToBeTransmit(List<CarInfo> carInfos) {
-        long ocrCount = carInfos.stream().filter(CarInfo::isState).count();
+        long ocrCount = carInfos.stream().filter(CarInfo::ocrValidate).count();
         if (ocrCount > 0) {
             return recognizedVehicle(carInfos);
         }
@@ -83,7 +83,7 @@ public abstract class Breaker {
         String carNumber = null;
         // OCR 이 인식된 값들을 차량번호를 키로 하여 map으로 변환.
         Map<String, List<CarInfo>> carMap = carInfos.stream()
-                .filter(CarInfo::isState)
+                .filter(CarInfo::ocrValidate)   // 정상 처리된 차량
                 .collect(Collectors.groupingBy(CarInfo::getNumber));
 
         // 인식된 번호중 더 많이 찍힌 차량번호를 추출.
