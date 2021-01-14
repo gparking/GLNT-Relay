@@ -97,7 +97,7 @@ public class ReceiveController {
                 .map(channel -> {
                     boolean channelActive = channel.isActive();
                     String remote = channel.remoteAddress().toString();
-                    String host = remote.substring(0, remote.indexOf("/")) + remote.substring(remote.indexOf(":"));
+                    String host = remote.substring(0, remote.indexOf('/')) + remote.substring(remote.indexOf(':'));
                     // TODO: 나중엔 remoteAddress 로 변경
                     FacilityInfo info = serverConfig.findFacilityInfoByHost(host);
                     info.setState(channelActive);
