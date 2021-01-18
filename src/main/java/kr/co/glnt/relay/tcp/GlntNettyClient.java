@@ -21,7 +21,7 @@ import java.util.*;
 public class GlntNettyClient {
     private NioEventLoopGroup loopGroup;
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
-
+    private static boolean RESTART;
     private final SimpMessagingTemplate webSocket;
     private final ObjectMapper objectMapper;
     private final ServerConfig config;
@@ -79,12 +79,15 @@ public class GlntNettyClient {
     }
 
     private void reconnect(String ip, int port) {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                connect(ip, port);
-            }
-        }, 1000);
+        if (!RESTART) {
+            log.info(">>> {}:{} channel reconnect...!!!", ip, port);
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    connect(ip, port);
+                }
+            }, 1000);
+        }
     }
 
     public void sendMessage(String host, String msg, Charset charset) {
@@ -101,6 +104,10 @@ public class GlntNettyClient {
 
     public static Map<String, Channel> getChannelMap() {
         return channelMap;
+    }
+
+    public static void setRESTART(boolean restart) {
+        RESTART = restart;
     }
 
 

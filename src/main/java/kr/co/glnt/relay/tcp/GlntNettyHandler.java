@@ -36,6 +36,8 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     // webSocket 에 연결된 client 에게 연결 성공 되었다고 전송
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        log.info("host: {} channelActive..!", ctx.channel().remoteAddress());
+        GlntNettyClient.setRESTART(false);
         webSocket.convertAndSend("/subscribe/connect", "connect");
     }
 
@@ -43,6 +45,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     // webSocket 에 연결된 client 에게 연결 종료 되었다고 전송
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.info("host: {} channelInactive..!", ctx.channel().remoteAddress());
         webSocket.convertAndSend("/subscribe/disconnect", "disconnect");
     }
 

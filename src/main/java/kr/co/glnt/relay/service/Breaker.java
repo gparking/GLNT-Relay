@@ -35,6 +35,7 @@ public abstract class Breaker {
         gpmsAPI = ctx.getBean("gpmsAPI", GpmsAPI.class);
     }
 
+
     /**
      * 차단기 시작
      */
