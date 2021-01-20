@@ -55,8 +55,8 @@ public class GlntFolderWatcher implements Runnable {
                     // 보조 LPR 이 달려있을 경우는 이렇게 진행해야 정확.
                     // 우선 보조 LPR 이 입차 전방에만 있다고 가정하여 이렇게 해놨지만
                     // 추후 어떻게 될지 모르니 설계면에서 다시 생각 해봐야 함.
-                    case INFRONT:
-                    case OUTFRONT:
+                    case ININFRONT:
+                    case OUTOUTFRONT:
                         new Thread(() ->
                             breaker.startProcessing(new EventInfo(fullPath))
                         ).start();

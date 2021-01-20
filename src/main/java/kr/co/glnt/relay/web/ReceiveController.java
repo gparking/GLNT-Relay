@@ -42,7 +42,7 @@ public class ReceiveController {
 
     @GetMapping("/v1/parkinglot/facility/refresh")
     public void facilityInfoRefresh() {
-        List<FacilityInfo> list = gpmsAPI.getParkinglotData(new FacilityInfoPayload(serverConfig.getServerName()));
+        List<FacilityInfo> list = gpmsAPI.getParkinglotData(new FacilityInfoPayload(serverConfig.getServerKey()));
         log.info("list : {}", list);
         serverConfig.setFacilityList(list);
     }

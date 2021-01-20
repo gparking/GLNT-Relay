@@ -63,7 +63,7 @@ public class GpmsAPI {
             ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
             ResponseDTO response = template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
             if (response.getCode() == HttpStatus.CREATED.value()) {
-                deleteImageFile(carInfo);
+//                deleteImageFile(carInfo);
             }
         } catch (Exception e) {
             log.error("입차 이미지 전송 실패", e);
@@ -76,7 +76,7 @@ public class GpmsAPI {
             ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
             ResponseDTO response = template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
             if (response.getCode() == HttpStatus.CREATED.value()) {
-                deleteImageFile(carInfo);
+//                deleteImageFile(carInfo);
             }
         } catch (Exception e) {
             log.error("출차 이미지 전송 실패", e);

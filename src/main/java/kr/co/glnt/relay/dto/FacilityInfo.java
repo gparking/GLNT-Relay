@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Objects;
 
 /**
- * 게이트 정보 클래스.
+ * 시설물 정보 클래스.
  */
 @Data
 public class FacilityInfo {

@@ -16,7 +16,7 @@ import java.util.Map;
 public class ServerConfig {
     private String gpmsUrl;
     private String ngisUrl;
-    private String serverName;
+    private String serverKey;
     private String fileErrPath;
     private List<FacilityInfo> facilityList;
     private Map<String, String> breakerCommand;
