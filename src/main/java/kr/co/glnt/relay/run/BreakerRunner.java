@@ -3,6 +3,7 @@ package kr.co.glnt.relay.run;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityInfoPayload;
+import kr.co.glnt.relay.tcp.GlntNettyClient;
 import kr.co.glnt.relay.watcher.GlntFolderWatcher;
 import kr.co.glnt.relay.web.GpmsAPI;
 import kr.co.glnt.relay.web.NgisAPI;
@@ -57,9 +58,7 @@ public class BreakerRunner implements ApplicationRunner {
         // 2. watcher thread 실행
         parkingGroup.forEach((key, value) -> {
             GlntFolderWatcher watcher = new GlntFolderWatcher(value.get(0));
-            Thread watcherThread = new Thread(watcher);
-            watcherThread.setName(value.get(0).generateGateLprType());
-            watcherThread.start();
+            new Thread(watcher).start();
         });
     }
 }

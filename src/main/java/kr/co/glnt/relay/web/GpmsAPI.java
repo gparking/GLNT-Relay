@@ -2,11 +2,7 @@ package kr.co.glnt.relay.web;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.co.glnt.relay.dto.CarInfo;
-import kr.co.glnt.relay.dto.FacilityInfo;
-import kr.co.glnt.relay.dto.ResponseDTO;
-import kr.co.glnt.relay.dto.ParkInOutPayload;
-import kr.co.glnt.relay.dto.FacilityInfoPayload;
+import kr.co.glnt.relay.dto.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -82,6 +78,19 @@ public class GpmsAPI {
             log.error("출차 이미지 전송 실패", e);
         }
     }
+
+
+    public void sendFacilityList(FacilityStatusWrapper facilityStatusList) {
+        try {
+            template.postForObject("/v1/relay/health_check", facilityStatusList, null);
+        } catch (Exception e) {
+            log.error("시설물 상태정보 전송 실패: ", e.getMessage());
+        }
+    }
+
+
+
+
 
     // note: 공통 클래스 추출시 옮길것
     private void deleteImageFile(CarInfo carInfo) throws IOException {

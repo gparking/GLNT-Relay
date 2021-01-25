@@ -3,14 +3,13 @@ package kr.co.glnt.relay.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import kr.co.glnt.relay.config.ServerConfig;
-import kr.co.glnt.relay.dto.DisplayMessage;
-import kr.co.glnt.relay.dto.FacilityInfo;
-import kr.co.glnt.relay.dto.FacilityInfoPayload;
-import kr.co.glnt.relay.dto.PayStationInfo;
+import kr.co.glnt.relay.dto.*;
 import kr.co.glnt.relay.exception.GlntBadRequestException;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -49,14 +48,15 @@ public class ReceiveController {
 
     /**
      * display 메세지 표시
+     *
      * @param message
      */
     @PostMapping("/v1/display/show")
     public void showDisplay(@RequestBody DisplayMessage message) {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
-        messageList.forEach( msg ->
-            client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"))
+        messageList.forEach(msg ->
+                client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"))
         );
     }
 
@@ -77,6 +77,9 @@ public class ReceiveController {
     @GetMapping("/v1/breaker/{facilityId}/{command}")
     public void breakerBarOpenTask(@PathVariable("facilityId") String facilityId,
                                    @PathVariable("command") String breakerCommand) {
+        log.info("facilityInfo : {}", serverConfig.getFacilityList());
+        log.info("facilityID : {}", facilityId);
+
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(facilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();
         String command = commandMap.get(breakerCommand);
@@ -88,6 +91,21 @@ public class ReceiveController {
         client.sendMessage(facilityInfo.generateHost(), String.format("%s%s%s", stx, command, etx), Charset.forName("ASCII"));
     }
 
+
+    // TODO: 연결된 전체 디바이스 상태정보 전달.
+    @GetMapping("/v1/device/health")
+    public ResponseEntity<ResponseDTO> fullDeviceStatusLookup() {
+        return ResponseEntity.ok(
+                new ResponseDTO(client.getChannelsStatus())
+        );
+    }
+
+    @GetMapping("/v1/device/health/{facilityID}")
+    public ResponseEntity<ResponseDTO> deviceHealthCheck(@PathVariable("facilityID") String facilityID) {
+        return ResponseEntity.ok(
+                new ResponseDTO(client.getChannelStatus(facilityID))
+        );
+    }
 
     @SneakyThrows
     @MessageMapping("/status-list")

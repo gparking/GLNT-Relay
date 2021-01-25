@@ -9,6 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import kr.co.glnt.relay.config.ServerConfig;
+import kr.co.glnt.relay.dto.FacilityInfo;
+import kr.co.glnt.relay.dto.FacilityStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -25,6 +27,7 @@ public class GlntNettyClient {
     private final SimpMessagingTemplate webSocket;
     private final ObjectMapper objectMapper;
     private final ServerConfig config;
+    private Timer healthCheckTimer = new Timer();
 
     public GlntNettyClient(SimpMessagingTemplate webSocket, ObjectMapper objectMapper, ServerConfig serverConfig) {
         this.webSocket = webSocket;
@@ -78,6 +81,7 @@ public class GlntNettyClient {
         }
     }
 
+    // 채널이 끊겼을때 재 연결
     private void reconnect(String ip, int port) {
         if (!RESTART) {
             log.info(">>> {}:{} channel reconnect...!!!", ip, port);
@@ -90,6 +94,7 @@ public class GlntNettyClient {
         }
     }
 
+    // 시설물에 메세지 전송. (차단기, 전광판, 정산기)
     public void sendMessage(String host, String msg, Charset charset) {
         log.info("send msg : {}", msg);
         if (!channelMap.containsKey(host)) {
@@ -102,10 +107,37 @@ public class GlntNettyClient {
     }
 
 
+    // 모든 채널의 상태를 리턴.
+    public List<FacilityStatus> getChannelsStatus() {
+        List<FacilityStatus> statusList = new ArrayList<>();
+        channelMap.forEach((host, channel) -> {
+            String facilityID = config.findFacilityInfoByHost(host).getFacilitiesId();
+            String healthStatus = getHealthStatus(channel);
+            statusList.add(new FacilityStatus(facilityID, healthStatus));
+        });
+        return statusList;
+    }
+
+    // 시설물 아이디와 일치하는 채널의 상태를 리턴
+    public List<FacilityStatus> getChannelStatus(String facilityID) {
+        String host = config.findByFacilitiesId(facilityID).generateHost();
+        String healthStatus = getHealthStatus(channelMap.get(host));
+        return Arrays.asList(new FacilityStatus(facilityID, healthStatus));
+    }
+
+    // 채널 상태값 리턴.
+    private String getHealthStatus(Channel channel) {
+        return channel.isActive()
+                ? "NORMAL"
+                : "ANNORMAL";
+    }
+
+    // 전체 채널을 담고 있는 맵을 리턴
     public static Map<String, Channel> getChannelMap() {
         return channelMap;
     }
 
+    // 서버 리스타트 시 진행중인지 아닌지 상태 추후
     public static void setRESTART(boolean restart) {
         RESTART = restart;
     }

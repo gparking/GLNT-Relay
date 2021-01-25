@@ -18,4 +18,11 @@ public class ResponseDTO {
         this.code = status.value();
         this.msg = msg;
     }
+
+    public ResponseDTO(Object result) {
+        this.code = HttpStatus.OK.value();
+        this.msg = "ok";
+        this.data = result;
+    }
+
 }

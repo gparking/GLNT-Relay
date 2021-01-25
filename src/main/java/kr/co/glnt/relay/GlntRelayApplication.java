@@ -1,5 +1,6 @@
 package kr.co.glnt.relay;
 
+import io.netty.channel.Channel;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
@@ -11,6 +12,8 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+
+import java.util.Map;
 
 @EnableRetry
 @EnableAsync
@@ -32,7 +35,12 @@ public class GlntRelayApplication {
     }
 
     public static void restart() {
-        GlntNettyClient.getChannelMap().forEach((key, value) -> value.disconnect());
+        Map<String, Channel> channels = GlntNettyClient.getChannelMap();
+        channels.forEach((key, value) -> {
+            value.disconnect();
+            channels.remove(key);
+        });
+
         ApplicationArguments args = context.getBean(ApplicationArguments.class);
         Thread thread = new Thread(() -> {
             context.close();
