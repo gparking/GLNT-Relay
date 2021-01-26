@@ -1,24 +1,20 @@
 package kr.co.glnt.relay.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.channel.Channel;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.*;
 import kr.co.glnt.relay.exception.GlntBadRequestException;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -26,19 +22,18 @@ public class ReceiveController {
 
     private final GlntNettyClient client;
     private final ServerConfig serverConfig;
-    private final SimpMessagingTemplate simpMessagingTemplate;
     private final ObjectMapper objectMapper;
     private final GpmsAPI gpmsAPI;
 
     public ReceiveController(GlntNettyClient client, ServerConfig serverConfig,
-                             SimpMessagingTemplate simpMessagingTemplate, ObjectMapper objectMapper, GpmsAPI gpmsAPI) {
+                             ObjectMapper objectMapper, GpmsAPI gpmsAPI) {
         this.client = client;
         this.serverConfig = serverConfig;
-        this.simpMessagingTemplate = simpMessagingTemplate;
         this.objectMapper = objectMapper;
         this.gpmsAPI = gpmsAPI;
     }
 
+    // 서버 재시작.
     @GetMapping("/v1/parkinglot/facility/refresh")
     public void facilityInfoRefresh() {
         List<FacilityInfo> list = gpmsAPI.getParkinglotData(new FacilityInfoPayload(serverConfig.getServerKey()));
@@ -92,7 +87,7 @@ public class ReceiveController {
     }
 
 
-    // TODO: 연결된 전체 디바이스 상태정보 전달.
+    // 연결된 전체 디바이스 상태정보 조회.
     @GetMapping("/v1/device/health")
     public ResponseEntity<ResponseDTO> fullDeviceStatusLookup() {
         return ResponseEntity.ok(
@@ -100,6 +95,7 @@ public class ReceiveController {
         );
     }
 
+    // 시설물 아이디로 디바이스 상태정보 조회
     @GetMapping("/v1/device/health/{facilityID}")
     public ResponseEntity<ResponseDTO> deviceHealthCheck(@PathVariable("facilityID") String facilityID) {
         return ResponseEntity.ok(
@@ -107,20 +103,19 @@ public class ReceiveController {
         );
     }
 
-    @SneakyThrows
-    @MessageMapping("/status-list")
-    public void connection() {
-        Map<String, Channel> channelMap = GlntNettyClient.getChannelMap();
-        List<FacilityInfo> list = channelMap.values().stream()
-                .map(channel -> {
-                    boolean channelActive = channel.isActive();
-                    String remote = channel.remoteAddress().toString();
-                    String host = remote.substring(0, remote.indexOf('/')) + remote.substring(remote.indexOf(':'));
-                    // note: 나중엔 remoteAddress 로 변경
-                    FacilityInfo info = serverConfig.findFacilityInfoByHost(host);
-                    info.setState(channelActive);
-                    return info;
-                }).collect(Collectors.toList());
-        simpMessagingTemplate.convertAndSend("/subscribe/status-list", objectMapper.writeValueAsString(list));
+    // LPR 전체 ping check
+    @GetMapping("/v1/lpr/health")
+    public ResponseEntity<ResponseDTO> fullLprStatusLookup() {
+        return ResponseEntity.ok(
+                new ResponseDTO((client.getFullLprStatus()))
+        );
+    }
+
+    // 특정 LPR ping check
+    @GetMapping("/v1/lpr/health/{facilityID}")
+    public ResponseEntity<ResponseDTO> lprStatusLookup(@PathVariable("facilityID") String facilityID) {
+        return ResponseEntity.ok(
+                new ResponseDTO(Arrays.asList(client.getLrpStatus(facilityID)))
+        );
     }
 }

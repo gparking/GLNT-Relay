@@ -12,9 +12,10 @@ import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityStatus;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -24,13 +25,10 @@ public class GlntNettyClient {
     private NioEventLoopGroup loopGroup;
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
     private static boolean RESTART;
-    private final SimpMessagingTemplate webSocket;
     private final ObjectMapper objectMapper;
     private final ServerConfig config;
-    private Timer healthCheckTimer = new Timer();
 
-    public GlntNettyClient(SimpMessagingTemplate webSocket, ObjectMapper objectMapper, ServerConfig serverConfig) {
-        this.webSocket = webSocket;
+    public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig) {
         this.objectMapper = objectMapper;
         this.config = serverConfig;
     }
@@ -50,7 +48,7 @@ public class GlntNettyClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
-                            pipeline.addLast(new GlntNettyHandler(webSocket, objectMapper, config));
+                            pipeline.addLast(new GlntNettyHandler(objectMapper, config));
                         }
                     });
             ChannelFuture channelFuture = bootstrap.connect().sync();
@@ -125,6 +123,36 @@ public class GlntNettyClient {
         return Arrays.asList(new FacilityStatus(facilityID, healthStatus));
     }
 
+    public List<FacilityStatus> getFullLprStatus() {
+        List<FacilityStatus> statusList = new ArrayList<>();
+        config.findLprList().stream().forEach(info -> {
+            String healthStatus = sendPing(info.getIp());
+            statusList.add(new FacilityStatus(info.getFacilitiesId(), healthStatus));
+        });
+        return statusList;
+    }
+
+    public FacilityStatus getLrpStatus(String facilityID) {
+        FacilityInfo info = config.findByFacilitiesId(facilityID);
+        String healthStatus = sendPing(info.getIp());
+        return new FacilityStatus(facilityID, healthStatus);
+    }
+
+
+    // 특정 IP에 Ping 신호 보내기
+    private String sendPing(String ip) {
+        boolean isActive = false;
+        try {
+            isActive = InetAddress.getByName(ip).isReachable(1000);
+        } catch (IOException e) {
+            log.error("Ping 신호 보내기 실패: ", e.getMessage());
+        }
+        return isActive
+                ? "normal"
+                : "noResponse";
+    }
+
+
     // 채널 상태값 리턴.
     private String getHealthStatus(Channel channel) {
         return channel.isActive()
@@ -132,10 +160,12 @@ public class GlntNettyClient {
                 : "ANNORMAL";
     }
 
+
     // 전체 채널을 담고 있는 맵을 리턴
     public static Map<String, Channel> getChannelMap() {
         return channelMap;
     }
+
 
     // 서버 리스타트 시 진행중인지 아닌지 상태 추후
     public static void setRESTART(boolean restart) {
