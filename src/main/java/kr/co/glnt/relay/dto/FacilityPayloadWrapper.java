@@ -7,5 +7,5 @@ import java.util.List;
 
 @Getter @RequiredArgsConstructor
 public class FacilityStatusWrapper {
-    private final List<FacilityStatus> facilitiesList;
+    private final List<Object> facilitiesList;
 }
