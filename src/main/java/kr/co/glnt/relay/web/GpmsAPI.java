@@ -80,11 +80,19 @@ public class GpmsAPI {
     }
 
 
-    public void sendFacilityList(FacilityStatusWrapper facilityStatusList) {
+    public void sendFacilityHealth(FacilityPayloadWrapper facilityStatusList) {
         try {
-            template.postForObject("/v1/relay/health_check", facilityStatusList, null);
+            template.postForObject("/v1/relay/health_check", facilityStatusList, ResponseDTO.class);
         } catch (Exception e) {
-            log.error("시설물 상태정보 전송 실패: ", e.getMessage());
+            log.error("시설물 상태정보 전송 실패: ", e);
+        }
+    }
+
+    public void sendFacilityAlarm(FacilityPayloadWrapper facilityPayloadWrapper) {
+        try {
+            template.postForObject("/v1/relay/failure_alarm", facilityPayloadWrapper, ResponseDTO.class);
+        } catch (Exception e) {
+            log.error("시설물 관련 알림 전송 실패: ", e);
         }
     }
 

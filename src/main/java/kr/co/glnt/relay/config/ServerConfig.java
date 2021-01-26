@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Setter @Getter
 @Configuration
@@ -18,6 +19,7 @@ public class ServerConfig {
     private String ngisUrl;
     private String serverKey;
     private String fileErrPath;
+    private int checkTime;
     private List<FacilityInfo> facilityList;
     private Map<String, String> breakerCommand;
 
@@ -36,6 +38,18 @@ public class ServerConfig {
                 .filter(info -> info.generateHost().equals(host))
                 .findFirst()
                 .orElseThrow(() -> new GlntBadRequestException("일치하는 host 가 없습니다."));
+    }
+
+    public List<FacilityInfo> findBreakerList() {
+        return this.facilityList.stream()
+                .filter(info -> info.getCategory().equals("BREAKER"))
+                .collect(Collectors.toList());
+    }
+
+    public List<FacilityInfo> findLprList() {
+        return this.facilityList.stream()
+                .filter(info -> info.getCategory().equals("LPR"))
+                .collect(Collectors.toList());
     }
 
 }

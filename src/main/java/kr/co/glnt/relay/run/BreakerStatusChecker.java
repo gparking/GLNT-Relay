@@ -4,6 +4,9 @@ import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityAlarm;
 import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
 import kr.co.glnt.relay.web.GpmsAPI;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -18,21 +21,21 @@ import java.util.stream.Collectors;
 
 @Order(3)
 @Component
-public class DeviceScheduleRunner implements Runnable {
+public class BreakerStatusChecker implements ApplicationRunner {
     private ThreadPoolTaskScheduler scheduler;
     private final GpmsAPI gpmsAPI;
     private final ServerConfig config;
 
-    public DeviceScheduleRunner(GpmsAPI gpmsAPI, ServerConfig config) {
+    public BreakerStatusChecker(GpmsAPI gpmsAPI, ServerConfig config) {
         this.gpmsAPI = gpmsAPI;
         this.config = config;
     }
 
+
     @Override
-    public void run() {
+    public void run(ApplicationArguments args) throws Exception {
         startScheduler();
     }
-
 
     public void stopScheduler() {
         scheduler.shutdown();
@@ -51,7 +54,7 @@ public class DeviceScheduleRunner implements Runnable {
                         // 현재 시간과 마지막 액션 시간 차이 구하고
                         long minute = ChronoUnit.MINUTES.between(info.getLastActionTime(), LocalDateTime.now());
                         // 상태가 30분 이상 지속되었을 때
-                        return minute >= 30 && info.getBarStatus().contains("GATE UP");
+                        return minute >= 30 && info.getBarStatus().equals("GATE UP OK");
                     })
                     .map(info -> FacilityAlarm.gateLongTimeOpen(info.getFacilitiesId()))
                     .collect(Collectors.toList());
@@ -65,6 +68,8 @@ public class DeviceScheduleRunner implements Runnable {
 
     public Trigger getTrigger() {
         // todo: 시간 설정. config에서 가져와야함.
-        return new PeriodicTrigger(config.getScheduleTime(), TimeUnit.MINUTES);
+        System.out.println("Breaker status checker set time : " + config.getCheckTime());
+        return new PeriodicTrigger(config.getCheckTime(), TimeUnit.MINUTES);
     }
+
 }

@@ -6,6 +6,14 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 @Getter @RequiredArgsConstructor
-public class FacilityStatusWrapper {
-    private final List<Object> facilitiesList;
+public class FacilityPayloadWrapper {
+    private final Object facilitiesList;
+
+    public static FacilityPayloadWrapper healthCheckPayload(List<FacilityStatus> payload) {
+        return new FacilityPayloadWrapper(payload);
+    }
+
+    public static FacilityPayloadWrapper facilityAlarmPayload(List<FacilityAlarm> payload) {
+        return new FacilityPayloadWrapper(payload);
+    }
 }

@@ -9,6 +9,7 @@ spring:
     ngis-url: "http://localhost:7777"
     server-key: "GATESVR1"
     file-err-path: "C:\\park\\error"
+    schedule-time: 30
     breaker-command:
       open: "GATE UP"
       close: "GATE DOWN"
@@ -36,6 +37,7 @@ spring:
     gpms-url: "http://192.168.20.6:11000"
     ngis-url: "http://localhost:7777"
     server-key: "GATESVR1"
+    schedule-time: 30
     file-err-path: "C:\\park\\error"
     breaker-command:
       open: "GATE UP"

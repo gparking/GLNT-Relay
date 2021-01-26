@@ -2,6 +2,8 @@ package kr.co.glnt.relay.dto;
 
 import lombok.Data;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -32,6 +34,13 @@ public class FacilityInfo {
     private String barStatus = "init";     // 차단기 Open/Close/UpLock
     private int passCount;
     private boolean state;      // 차단기 전원 상태
+    private LocalDateTime lastActionTime = LocalDateTime.now();
+    private int checkTime;
+
+    public void setBarStatus(String barStatus) {
+        this.barStatus = barStatus;
+        this.lastActionTime = LocalDateTime.now();
+    }
 
     public String generateGateLprType() {
         return Objects.nonNull(this.lprType)

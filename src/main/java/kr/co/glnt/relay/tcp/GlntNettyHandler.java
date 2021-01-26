@@ -8,11 +8,17 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import kr.co.glnt.relay.config.ApplicationContextProvider;
 import kr.co.glnt.relay.config.ServerConfig;
+import kr.co.glnt.relay.dto.FacilityAlarm;
 import kr.co.glnt.relay.dto.FacilityInfo;
+import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
+import kr.co.glnt.relay.dto.FacilityStatus;
+import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -23,30 +29,32 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private static final Pattern MESSAGE = Pattern.compile("[^a-zA-Z\\s]");
 
     private final ServerConfig config;
-    private final SimpMessagingTemplate webSocket;
     private final ObjectMapper objectMapper;
+    private final GpmsAPI gpmsAPI;
 
-    public GlntNettyHandler(SimpMessagingTemplate webSocket, ObjectMapper objectMapper, ServerConfig config) {
+    public GlntNettyHandler(ObjectMapper objectMapper, ServerConfig config) {
         this.config = config;
-        this.webSocket = webSocket;
         this.objectMapper = objectMapper;
+        this.gpmsAPI = ApplicationContextProvider.getApplicationContext().getBean("gpmsAPI", GpmsAPI.class);
     }
 
-    // 연결 성공
-    // webSocket 에 연결된 client 에게 연결 성공 되었다고 전송
+    // TCP 연결 성공
+    // GPMS 에 연결 메세지 전송.
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         log.info("host: {} channelActive..!", ctx.channel().remoteAddress());
         GlntNettyClient.setRESTART(false);
-        webSocket.convertAndSend("/subscribe/connect", "connect");
     }
 
     // 연결 종료
-    // webSocket 에 연결된 client 에게 연결 종료 되었다고 전송
+    // GPMS 에 연결 종료 메세지 전송.
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("host: {} channelInactive..!", ctx.channel().remoteAddress());
-        webSocket.convertAndSend("/subscribe/disconnect", "disconnect");
+        FacilityInfo facilityInfo = config.findFacilityInfoByHost(ctx.channel().remoteAddress().toString().substring(1));
+        gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
+                Arrays.asList(new FacilityStatus(facilityInfo.getFacilitiesId(), "noresponse"))
+        ));
     }
 
     @Override
@@ -96,26 +104,31 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     // 출차 차단기 작업.
     private void exitBreakerTask(FacilityInfo facilityInfo, String msg) {
-        // 정상적으로 게이트가 올라갔을 경우 시설물 고장이 아님
-        if (msg.contains("GATE UP OK")) {
-            facilityInfo.setPassCount(0);
-        }
+        new Thread(() -> {
+            // 정상적으로 게이트가 올라갔을 경우 시설물 고장이 아님
+            if (msg.contains("GATE UP OK")) {
+                facilityInfo.setPassCount(0);
+                return;
+            }
 
-        if (msg.contains("GATE DOWN ACTION")) {
-            String barStatus = facilityInfo.getBarStatus();
-            if (barStatus.equals("GATE UP OK")) {
-                int passCount = facilityInfo.getPassCount() + 1;
-                facilityInfo.setPassCount(passCount);
+            //  출차 디텍트를 밟았을때 (DET OUT GATE DOWN ACTION)
+            if (msg.contains("DET OUT")) {
+                String barStatus = facilityInfo.getBarStatus();
+                // 게이트 상태가 올라가있는 상황이면
+                if (barStatus.equals("GATE DOWN OK")) {
+                    int passCount = facilityInfo.getPassCount() + 1;
+                    if (passCount > 3) {
+                        List<FacilityAlarm> alarmList = Arrays.asList(
+                                FacilityAlarm.gateBarDamageDoubt(facilityInfo.getFacilitiesId())
+                        );
+                        gpmsAPI.sendFacilityAlarm(FacilityPayloadWrapper.facilityAlarmPayload(alarmList));
+                        facilityInfo.setPassCount(0);
+                    }
 
-                if (passCount > 3) {
-                    // api 호출.
-                    String facilityId = facilityInfo.getFacilitiesId();
-                    log.info(facilityId);
-                    // note: "F", 시설물 아이디, 메세지
-
+                    facilityInfo.setPassCount(passCount);
                 }
             }
-        }
+        }).start();
     }
 
     // 정산기에서 메세지 수신
