@@ -48,6 +48,7 @@ public class ReceiveController {
      */
     @PostMapping("/v1/display/show")
     public void showDisplay(@RequestBody DisplayMessage message) {
+        log.info("display msg: {}", message);
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
         List<String> messageList = message.generateMessageList();
         messageList.forEach(msg ->
@@ -72,8 +73,7 @@ public class ReceiveController {
     @GetMapping("/v1/breaker/{facilityId}/{command}")
     public void breakerBarOpenTask(@PathVariable("facilityId") String facilityId,
                                    @PathVariable("command") String breakerCommand) {
-        log.info("facilityInfo : {}", serverConfig.getFacilityList());
-        log.info("facilityID : {}", facilityId);
+        log.info("gate command : \"facilityId\": \"{}\", \"command\": \"{}\"", facilityId, breakerCommand);
 
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(facilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();

@@ -55,14 +55,20 @@ public abstract class Breaker {
      */
     protected List<CarInfo> getCurrentGroupEventList(EventInfoGroup eventGroup) {
         return eventGroup.getEventList().stream()
-                .map(eventInfo -> {
-                    CarInfo carInfo = ngisAPI.requestOCR(eventInfo.getFullPath());
-                    carInfo.setInDate(eventInfo.getCreatedTime());
-                    carInfo.setFullPath(eventInfo.getFullPath());
-                    carInfo.setFacilitiesId(facilityInfo.getFacilitiesId());
-                    return carInfo;
-                })
+                .map(eventInfo -> generatedCarInfo(eventInfo))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * EventInfo 에 있는 이미지를 사용해
+     * 차량 번호를 추출 후 차량 정보를 생성하여 반환
+     */
+    protected CarInfo generatedCarInfo(EventInfo eventInfo) {
+        CarInfo carInfo = ngisAPI.requestOCR(eventInfo.getFullPath());
+        carInfo.setInDate(eventInfo.getCreatedTime());
+        carInfo.setFullPath(eventInfo.getFullPath());
+        carInfo.setFacilitiesId(facilityInfo.getFacilitiesId());
+        return carInfo;
     }
 
     /**
@@ -72,14 +78,38 @@ public abstract class Breaker {
         long ocrCount = carInfos.stream().filter(CarInfo::ocrValidate).count();
         if (ocrCount > 0) {
             return recognizedVehicle(carInfos);
-        }
-        else {
+        } else {
             return partiallyRecognizedVehicle(carInfos);
         }
     }
 
+
     /**
-     *  정상인식 된 차량들 중에 더 많이 찍힌 차량번호를 리턴.
+     * 1초 이내에 들어온 입차자량 리스트를 비교해
+     * 미인식(오인식 포함) 제외한 차량만 조회하여
+     * 차량번호가 같은지 비교한다.
+     */
+    protected boolean isEqualsCarNumber(List<CarInfo> carInfos) {
+        for (int i = 0; i < carInfos.size(); i++) {
+
+            // 정상 처리된 차량 번호일 경우
+            if (carInfos.get(i).ocrValidate()) {
+                for (int j = i + 1; j < carInfos.size(); j++) {
+
+                    // Main LPR 과 Sub LPR 의 차량 번호를 같은지 비교
+                    if (carInfos.get(i).getNumber().equals(carInfos.get(j).getNumber())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * 정상인식 된 차량들 중에 더 많이 찍힌 차량번호를 리턴.
      */
     private CarInfo recognizedVehicle(List<CarInfo> carInfos) {
         String carNumber = null;

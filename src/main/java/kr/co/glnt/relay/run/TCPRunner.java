@@ -39,8 +39,8 @@ public class TCPRunner implements ApplicationRunner {
         client.setFeatureCount(facilityInfos.size());
 
         facilityInfos.forEach(info -> {
-//            client.connect(info.getIp(), info.getPort());
-            client.connect("192.168.20.121", 4001);
+            client.connect(info.getIp(), info.getPort());
+//            client.connect("192.168.20.121", 4001);
         });
     }
 

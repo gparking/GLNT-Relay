@@ -11,7 +11,6 @@ public class EventInfoGroup {
     private String key;
     private final List<EventInfo> eventList;
 
-
     public EventInfoGroup(List<EventInfo> eventList) {
         this.eventList = eventList;
         this.key = generateUUID();

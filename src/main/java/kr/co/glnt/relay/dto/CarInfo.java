@@ -14,7 +14,6 @@ public class CarInfo {
     private long inDate;            // 입차 시간.
     private String facilitiesId;    // 들어온 게이트 아이디.
 
-
     /**
      * OCR 결과 코드를 비교해 성공인지 실패인지 확인
      * 성공 코드 : 1, 2, 3, 4, 5

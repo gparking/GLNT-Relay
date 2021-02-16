@@ -29,13 +29,17 @@ public class EntranceBack extends Breaker {
     @Override
     public void startProcessing(EventInfo eventInfo) {
         try {
-            EventInfoGroup frontBackEventGroup = EventQueueManager.pollEntranceBackQueue();
-            if (Objects.isNull(frontBackEventGroup)) {
-                return;
-            }
-            List<CarInfo> carInfos = getCurrentGroupEventList(frontBackEventGroup);
+//            EventInfoGroup frontBackEventGroup = EventQueueManager.pollEntranceBackQueue();
+//            if (Objects.isNull(frontBackEventGroup)) {
+//                return;
+//            }
+//            List<CarInfo> carInfos = getCurrentGroupEventList(frontBackEventGroup);
 
-            gpmsAPI.requestEntranceCar(frontBackEventGroup.getKey(), carInfos.get(0));
+//            gpmsAPI.requestEntranceCar(frontBackEventGroup.getKey(), carInfos.get(0));
+            CarInfo carInfo = generatedCarInfo(eventInfo);
+            if(carInfo.ocrValidate()) {
+                gpmsAPI.requestEntranceCar(null, generatedCarInfo(eventInfo));
+            }
         }
         catch (Exception e) {
             log.error("입차 - 후방 에러", e.getMessage());

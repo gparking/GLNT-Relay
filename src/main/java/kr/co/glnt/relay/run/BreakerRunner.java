@@ -50,7 +50,6 @@ public class BreakerRunner implements ApplicationRunner {
                 .filter(info -> Objects.nonNull(info.getImagePath()))
                 .collect(Collectors.groupingBy(FacilityInfo::getImagePath));
 
-
         // 2. watcher thread 실행
         parkingGroup.forEach((key, value) -> {
             GlntFolderWatcher watcher = new GlntFolderWatcher(value.get(0));

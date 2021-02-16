@@ -28,13 +28,15 @@ public class EventQueueManager {
     /**
      * 새로운 입차차량 그룹을 생성 후 큐에 추가.
      */
-    public static void addNewGroupToQueue(EventInfo eventInfo) {
+    public static EventInfoGroup addNewGroupToQueue(EventInfo eventInfo) {
         List<EventInfo> eventInfoList = new ArrayList<>();
         eventInfoList.add(eventInfo);
         EventInfoGroup group = new EventInfoGroup(eventInfoList);
 
         entranceFrontQueue.offer(group);
         entranceBackQueue.offer(group);
+
+        return group;
     }
 
     /**
@@ -59,10 +61,13 @@ public class EventQueueManager {
     /**
      * 새로운 출차차량 그룹을 생성 후 큐에 추가
      */
-    public static void addNewGroupToExitQueue(EventInfo eventInfo) {
+    public static EventInfoGroup addNewGroupToExitQueue(EventInfo eventInfo) {
         List<EventInfo> eventInfoList = new ArrayList<>();
         eventInfoList.add(eventInfo);
-        exitQueue.offer(new EventInfoGroup(eventInfoList));
+        EventInfoGroup group = new EventInfoGroup(eventInfoList);
+        exitQueue.offer(group);
+
+        return group;
     }
 
     /**
