@@ -12,6 +12,7 @@ import org.springframework.util.StreamUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 @Slf4j
 public class RestTemplateLoggingInterceptor implements ClientHttpRequestInterceptor {
@@ -23,9 +24,9 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
         headers.setBasicAuth("", "");
 
         URI uri = request.getURI();
-        traceRequest(request, body);
+//        traceRequest(request, body);
         ClientHttpResponse response = execution.execute(request, body);
-        traceResponse(response, uri);
+//        traceResponse(response, uri);
 
 //        return execution.execute(request, body);
         return response;
@@ -41,9 +42,12 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
 
     private void traceResponse(ClientHttpResponse response, URI uri) throws IOException {
         StringBuilder responseLog = new StringBuilder();
-        responseLog.append(">>> [RESPONSE] ")
-                .append("uri: ").append(uri)
-                .append(", body: ").append(StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8));
+
+        if (Objects.nonNull(response)) {
+            responseLog.append(">>> [RESPONSE] ")
+                    .append("uri: ").append(uri)
+                    .append(", body: ").append(StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8));
+        }
         log.info(responseLog.toString());
     }
 }

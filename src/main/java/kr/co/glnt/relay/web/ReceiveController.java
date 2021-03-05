@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.*;
 import kr.co.glnt.relay.exception.GlntBadRequestException;
+import kr.co.glnt.relay.service.DisplayService;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -11,10 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -24,20 +22,24 @@ public class ReceiveController {
     private final ServerConfig serverConfig;
     private final ObjectMapper objectMapper;
     private final GpmsAPI gpmsAPI;
+    private final DisplayService displayService;
+
+
 
     public ReceiveController(GlntNettyClient client, ServerConfig serverConfig,
-                             ObjectMapper objectMapper, GpmsAPI gpmsAPI) {
+                             ObjectMapper objectMapper, GpmsAPI gpmsAPI, DisplayService displayService) {
         this.client = client;
         this.serverConfig = serverConfig;
         this.objectMapper = objectMapper;
         this.gpmsAPI = gpmsAPI;
+        this.displayService = displayService;
     }
 
-    // 서버 재시작.
+    // 설정 정보 리프레시
     @GetMapping("/v1/parkinglot/facility/refresh")
     public void facilityInfoRefresh() {
         List<FacilityInfo> list = gpmsAPI.getParkinglotData(new FacilityInfoPayload(serverConfig.getServerKey()));
-        log.info("list : {}", list);
+        log.debug("list : {}", list);
         serverConfig.setFacilityList(list);
     }
 
@@ -48,13 +50,12 @@ public class ReceiveController {
      */
     @PostMapping("/v1/display/show")
     public void showDisplay(@RequestBody DisplayMessage message) {
-        log.info("display msg: {}", message);
-        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getFacilityId());
-        List<String> messageList = message.generateMessageList();
-        messageList.forEach(msg ->
-                client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"))
-        );
+        displayService.sendDisplayMessage(message);
     }
+
+
+
+
 
     /**
      * 정산기 메세지 명령
@@ -62,27 +63,33 @@ public class ReceiveController {
     @SneakyThrows
     @PostMapping("/v1/parkinglot/paystation")
     public void parkingCostCalculator(@RequestBody PayStationInfo payStationInfo) {
-        log.info("payStationInfo : {}", objectMapper.writeValueAsString(payStationInfo));
-
-        client.sendMessage(payStationInfo.getFacilityId(), objectMapper.writeValueAsString(payStationInfo.getData()), Charset.forName("ASCII"));
+        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(payStationInfo.getDtFacilityId());
+        log.info(">>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), objectMapper.writeValueAsString(payStationInfo));
+        client.sendMessage(facilityInfo.generateHost(), objectMapper.writeValueAsString(payStationInfo.getData()), Charset.forName("UTF-8"));
     }
 
     /**
      * 게이트 차단기 명령
      */
-    @GetMapping("/v1/breaker/{facilityId}/{command}")
-    public void breakerBarOpenTask(@PathVariable("facilityId") String facilityId,
+    @GetMapping("/v1/breaker/{dtFacilityId}/{command}")
+    public void breakerBarOpenTask(@PathVariable("dtFacilityId") String dtFacilityId,
                                    @PathVariable("command") String breakerCommand) {
-        log.info("gate command : \"facilityId\": \"{}\", \"command\": \"{}\"", facilityId, breakerCommand);
-
-        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(facilityId);
+        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(dtFacilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();
         String command = commandMap.get(breakerCommand);
         if (Objects.isNull(command))
             throw new GlntBadRequestException("잘못된 명령어입니다.");
 
-        char stx = 0x02;
-        char etx = 0x03;
+
+        char stx = 0x02, etx = 0x03;
+        if (facilityInfo.getBarStatus().contains("GATE UP")) {
+            int openQueueSize = facilityInfo.getOpenMessageQueue().size();
+            log.info(">>> 차단기({}) UP - 대기중인 차량: {}", dtFacilityId, openQueueSize);
+            facilityInfo.addOpenMessage(String.format("%s%s%s", stx, command, etx));
+        }
+
+        log.info(">>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), dtFacilityId, command);
+
         client.sendMessage(facilityInfo.generateHost(), String.format("%s%s%s", stx, command, etx), Charset.forName("ASCII"));
     }
 
@@ -96,10 +103,10 @@ public class ReceiveController {
     }
 
     // 시설물 아이디로 디바이스 상태정보 조회
-    @GetMapping("/v1/device/health/{facilityID}")
-    public ResponseEntity<ResponseDTO> deviceHealthCheck(@PathVariable("facilityID") String facilityID) {
+    @GetMapping("/v1/device/health/{dtFacilityId}")
+    public ResponseEntity<ResponseDTO> deviceHealthCheck(@PathVariable("dtFacilityId") String dtFacilityId) {
         return ResponseEntity.ok(
-                new ResponseDTO(client.getChannelStatus(facilityID))
+                new ResponseDTO(client.getChannelStatus(dtFacilityId))
         );
     }
 

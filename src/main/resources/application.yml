@@ -3,13 +3,13 @@ server:
 
 spring:
   profiles:
-    active: default
+    active: prod
   server-config:
-    gpms-url: "http://ec2-54-180-8-134.ap-northeast-2.compute.amazonaws.com:7000"
-    ngis-url: "http://localhost:7777"
+    gpms-url: ""
+    ngis-url: ""
     server-key: "GATESVR1"
     file-err-path: "C:\\park\\error"
-    schedule-time: 30
+    check-time: 30
     breaker-command:
       open: "GATE UP"
       close: "GATE DOWN"
@@ -26,24 +26,28 @@ management:
       exposure:
         include: "info"
 
+logging:
+  level:
+    org.springframework: info
+    org.springframework.web : info
+    root: info
 
 
 ---
 
 spring:
-  profiles:
-    active: dev
+  profiles: local
   server-config:
     gpms-url: "http://192.168.20.6:11000"
     ngis-url: "http://localhost:7777"
     server-key: "GATESVR1"
-    schedule-time: 30
+    check-time: 30
     file-err-path: "C:\\park\\error"
     breaker-command:
       open: "GATE UP"
       close: "GATE DOWN"
-      upLock: "GATE UPLOCK"
-      unLock: "GATE UNLOCK"
+      uplock: "GATE UPLOCK"
+      unlock: "GATE UNLOCK"
 
     mvc:
       throw-exception-if-no-handler-found: true
@@ -53,3 +57,40 @@ management:
     web:
       exposure:
         include: "*"
+
+logging:
+  level:
+    org.springframework: info
+    org.springframework.web : info
+    root: info
+
+
+---
+spring:
+  profiles: staging
+  server-config:
+    gpms-url: "http://localhost:13000"
+    ngis-url: "http://localhost:7777"
+    server-key: "GATESVR1"
+    check-time: 30
+    file-err-path: "C:\\park\\error"
+    breaker-command:
+      open: "GATE UP"
+      close: "GATE DOWN"
+      uplock: "GATE UPLOCK"
+      unlock: "GATE UNLOCK"
+
+    mvc:
+      throw-exception-if-no-handler-found: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    org.springframework: info
+    org.springframework.web : info
+    root: info

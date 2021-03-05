@@ -8,10 +8,13 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -21,12 +24,13 @@ import java.util.*;
 
 @Slf4j
 @Component
+@DependsOn("gpmsAPI")
 public class GlntNettyClient {
     private NioEventLoopGroup loopGroup;
-    private static Map<String, Channel> channelMap = new LinkedHashMap<>();
-    private static boolean RESTART;
     private final ObjectMapper objectMapper;
     private final ServerConfig config;
+    private static Map<String, Channel> channelMap = new LinkedHashMap<>();
+
 
     public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig) {
         this.objectMapper = objectMapper;
@@ -39,6 +43,7 @@ public class GlntNettyClient {
         }
     }
 
+    @Async
     public void connect(final String host, final int port) {
         Bootstrap bootstrap = new Bootstrap();
         try {
@@ -48,6 +53,8 @@ public class GlntNettyClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
+                            pipeline.addLast("idleStateHandler", new IdleStateHandler(3, 0, 0));
+                            pipeline.addLast("glntIdleHandler", new GlntIdleHandler());
                             pipeline.addLast(new GlntNettyHandler(objectMapper, config));
                         }
                     });
@@ -81,22 +88,20 @@ public class GlntNettyClient {
 
     // 채널이 끊겼을때 재 연결
     private void reconnect(String ip, int port) {
-        if (!RESTART) {
-            log.info(">>> {}:{} channel reconnect...!!!", ip, port);
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    connect(ip, port);
-                }
-            }, 1000);
-        }
+        FacilityInfo facilityInfo = config.findFacilityInfoByHost(String.format("%s:%d", ip, port));
+        log.info(">>>> {}({}) 재연결 시도", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId());
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                connect(ip, port);
+            }
+        }, 1000);
     }
 
     // 시설물에 메세지 전송. (차단기, 전광판, 정산기)
     public void sendMessage(String host, String msg, Charset charset) {
-        log.info("send msg : {}", msg);
         if (!channelMap.containsKey(host)) {
-            log.info("없는 시설물 아이디: {}", host);
+            log.warn("<!> is not found {}", host);
             return;
         }
         ByteBuf byteBuf = Unpooled.copiedBuffer(msg, charset);
@@ -111,7 +116,10 @@ public class GlntNettyClient {
         channelMap.forEach((host, channel) -> {
             String facilityID = config.findFacilityInfoByHost(host).getFacilitiesId();
             String healthStatus = getHealthStatus(channel);
-            statusList.add(new FacilityStatus(facilityID, healthStatus));
+
+            FacilityStatus facilityStatus = FacilityStatus.deviceHealth(facilityID, healthStatus);
+
+            statusList.add(facilityStatus);
         });
         return statusList;
     }
@@ -120,14 +128,19 @@ public class GlntNettyClient {
     public List<FacilityStatus> getChannelStatus(String facilityID) {
         String host = config.findByFacilitiesId(facilityID).generateHost();
         String healthStatus = getHealthStatus(channelMap.get(host));
-        return Arrays.asList(new FacilityStatus(facilityID, healthStatus));
+
+        FacilityStatus facilityStatus = FacilityStatus.deviceHealth(facilityID, healthStatus);
+
+        return Arrays.asList(facilityStatus);
     }
 
     public List<FacilityStatus> getFullLprStatus() {
         List<FacilityStatus> statusList = new ArrayList<>();
         config.findLprList().stream().forEach(info -> {
-            String healthStatus = sendPing(info.getIp());
-            statusList.add(new FacilityStatus(info.getFacilitiesId(), healthStatus));
+            if (Objects.nonNull(!info.getFacilitiesId().isEmpty()) && !info.getFacilitiesId().isEmpty()) {
+                String healthStatus = sendPing(info.getIp());
+                statusList.add(FacilityStatus.deviceHealth(info.getFacilitiesId(), healthStatus));
+            }
         });
         return statusList;
     }
@@ -135,7 +148,7 @@ public class GlntNettyClient {
     public FacilityStatus getLrpStatus(String facilityID) {
         FacilityInfo info = config.findByFacilitiesId(facilityID);
         String healthStatus = sendPing(info.getIp());
-        return new FacilityStatus(facilityID, healthStatus);
+        return FacilityStatus.deviceHealth(info.getFacilitiesId(), healthStatus);
     }
 
 
@@ -148,8 +161,8 @@ public class GlntNettyClient {
             log.error("Ping 신호 보내기 실패: ", e.getMessage());
         }
         return isActive
-                ? "normal"
-                : "noResponse";
+                ? "NORMAL"
+                : "ERROR";
     }
 
 
@@ -157,7 +170,7 @@ public class GlntNettyClient {
     private String getHealthStatus(Channel channel) {
         return channel.isActive()
                 ? "NORMAL"
-                : "ANNORMAL";
+                : "ERROR";
     }
 
 
@@ -165,12 +178,5 @@ public class GlntNettyClient {
     public static Map<String, Channel> getChannelMap() {
         return channelMap;
     }
-
-
-    // 서버 리스타트 시 진행중인지 아닌지 상태 추후
-    public static void setRESTART(boolean restart) {
-        RESTART = restart;
-    }
-
 
 }

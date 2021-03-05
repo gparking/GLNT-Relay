@@ -1,13 +1,13 @@
 package kr.co.glnt.relay.service;
 
 
+import kr.co.glnt.relay.config.ApplicationContextProvider;
 import kr.co.glnt.relay.dto.CarInfo;
+import kr.co.glnt.relay.dto.EventInfo;
 import kr.co.glnt.relay.dto.EventInfoGroup;
+import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.web.GpmsAPI;
 import kr.co.glnt.relay.web.NgisAPI;
-import kr.co.glnt.relay.config.ApplicationContextProvider;
-import kr.co.glnt.relay.dto.EventInfo;
-import kr.co.glnt.relay.dto.FacilityInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 
@@ -67,7 +67,7 @@ public abstract class Breaker {
         CarInfo carInfo = ngisAPI.requestOCR(eventInfo.getFullPath());
         carInfo.setInDate(eventInfo.getCreatedTime());
         carInfo.setFullPath(eventInfo.getFullPath());
-        carInfo.setFacilitiesId(facilityInfo.getFacilitiesId());
+        carInfo.setDtFacilitiesId(facilityInfo.getDtFacilitiesId());
         return carInfo;
     }
 

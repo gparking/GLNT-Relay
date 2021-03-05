@@ -5,7 +5,7 @@ plugins {
     id "org.sonarqube" version "2.6"
 }
 
-group = 'com.example'
+group = 'kr.co.glnt'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
 
@@ -34,6 +34,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     compile group: 'io.netty', name: 'netty-all', version: '4.1.42.Final'
+
 }
 
 test {

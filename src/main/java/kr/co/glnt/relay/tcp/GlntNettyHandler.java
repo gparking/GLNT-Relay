@@ -3,24 +3,20 @@ package kr.co.glnt.relay.tcp;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
 import io.netty.util.CharsetUtil;
 import kr.co.glnt.relay.config.ApplicationContextProvider;
 import kr.co.glnt.relay.config.ServerConfig;
-import kr.co.glnt.relay.dto.FacilityAlarm;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
 import kr.co.glnt.relay.dto.FacilityStatus;
 import kr.co.glnt.relay.web.GpmsAPI;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.nio.charset.Charset;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -42,33 +38,45 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     // GPMS 에 연결 메세지 전송.
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.info("host: {} channelActive..!", ctx.channel().remoteAddress());
-        GlntNettyClient.setRESTART(false);
+        FacilityInfo facilityInfo = config.findFacilityInfoByHost(ctx.channel().remoteAddress().toString().substring(1));
+        log.info(">>>> {}({}) 연결 성공", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId());
+        gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
+                Arrays.asList(FacilityStatus.reconnect(facilityInfo.getDtFacilitiesId()))
+        ));
     }
+
 
     // 연결 종료
     // GPMS 에 연결 종료 메세지 전송.
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("host: {} channelInactive..!", ctx.channel().remoteAddress());
         FacilityInfo facilityInfo = config.findFacilityInfoByHost(ctx.channel().remoteAddress().toString().substring(1));
         gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
-                Arrays.asList(new FacilityStatus(facilityInfo.getFacilitiesId(), "noresponse"))
+                Arrays.asList(FacilityStatus.deviceDisconnect(facilityInfo.getDtFacilitiesId()))
         ));
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
+        String host = ctx.channel().remoteAddress().toString().substring(1);
+
+        FacilityInfo facilityInfo = config.findFacilityInfoByHost(host);
+
         String message = byteBufToString(msg);
-        if (message.contains("GATE")) {
-            receiveBreakerMessage(ctx.channel(), message);
+
+        // 차단기 응답 메세지
+        if (facilityInfo.getFname().contains("차단기")) {
+            receiveBreakerMessage(ctx.channel(), facilityInfo, message);
             return;
         }
 
-        if (message.equals("정산기")) {
-            // 정산기.
-            receivePayStationMessage(ctx.channel(), message);
+        // 정산기 응답 메세지
+        if (facilityInfo.getFname().contains("정산기")) {
+            receivePayStationMessage(facilityInfo, message);
+            return;
         }
+
+        log.info(">>>> {}({})메세지 수신: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), message);
     }
 
 
@@ -89,17 +97,35 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     // 차단기에서 메세지 수신
-    public void receiveBreakerMessage(Channel channel, String message) {
-        FacilityInfo facilityInfo = config.findFacilityInfoByHost(channel.remoteAddress().toString().substring(1));
+    public void receiveBreakerMessage(Channel channel, FacilityInfo facilityInfo, String message) {
+        String id = facilityInfo.getDtFacilitiesId();
         String msg = MESSAGE.matcher(message).replaceAll("");
+
+        log.info(">>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), id, msg);
+
+        // TODO: 차단기 리셋시 리셋 전 상태값을 가져와 uplock 일경우 uplock 으로 변경해주기.
 
         if (facilityInfo.getFname().equals("출구")) {
             exitBreakerTask(facilityInfo, msg);
+
+        } else {
+            // 차단기가 내려가 가는 중이거나 내려가 있을 경우
+            if (message.contains("DET OUT")) {
+                // 입차 대기 중인 차량이 있는지 확인 후 있을 경우
+                if (facilityInfo.getOpenMessageQueue().size() > 1) {
+                    ByteBuf byteBuf = Unpooled.copiedBuffer(facilityInfo.getOpenMessageQueue().poll(), Charset.forName("ASCII"));
+                    channel.writeAndFlush(byteBuf);
+                    log.info(">>> {}({}) DOWN - 대기중인 차량: {}", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
+                }
+            }
         }
 
-        log.info("차단기 메세지 수신 : {}", msg);
-        facilityInfo.setBarStatus(msg);
+        // 액션이 완료 되었을때 gpms 로 상태정보 전송.
+        if (msg.contains("OK")) {
+            sendBreakerStatus(facilityInfo, msg);
+        }
 
+        facilityInfo.setBarStatus(msg);
     }
 
     // 출차 차단기 작업.
@@ -114,15 +140,16 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             //  출차 디텍트를 밟았을때 (DET OUT GATE DOWN ACTION)
             if (msg.contains("DET OUT")) {
                 String barStatus = facilityInfo.getBarStatus();
-                // 게이트 상태가 올라가있는 상황이면
+                // 게이트 게이트 상태가 내려가져있는 상황일때.
+                // 4대 이상 차량이 출차될 경우 알람 발생
                 if (barStatus.equals("GATE DOWN OK")) {
                     int passCount = facilityInfo.getPassCount() + 1;
                     if (passCount > 3) {
-                        List<FacilityAlarm> alarmList = Arrays.asList(
-                                FacilityAlarm.gateBarDamageDoubt(facilityInfo.getFacilitiesId())
+                        List<FacilityStatus> alarmList = Arrays.asList(
+                                FacilityStatus.gateBarDamageDoubt(facilityInfo.getDtFacilitiesId())
                         );
                         gpmsAPI.sendFacilityAlarm(FacilityPayloadWrapper.facilityAlarmPayload(alarmList));
-                        facilityInfo.setPassCount(0);
+                        passCount = 0;
                     }
 
                     facilityInfo.setPassCount(passCount);
@@ -131,38 +158,71 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         }).start();
     }
 
+    public void sendBreakerStatus(FacilityInfo info, String msg) {
+        String sendMsg = "";
+        if (msg.contains("GATE UPLOCK OK")) {
+            sendMsg = "UPLOCK";
+        } else if (msg.contains("GATE UNLOCK OK")) {
+            sendMsg = "UNLOCK";
+        } else if (msg.contains("GATE UP OK")) {
+            sendMsg = "UP";
+        } else if (msg.contains("GATE DOWN OK")) {
+            sendMsg = "DOWN";
+        } else if (msg.contains("SCAN OK")) {
+            sendMsg = "SCAN";
+        }
+
+        if (!sendMsg.isEmpty()) {
+            List<FacilityStatus> status = Arrays.asList(
+                    FacilityStatus.breakerAction(info.getDtFacilitiesId(), sendMsg)
+            );
+            gpmsAPI.sendStatusNoti(FacilityPayloadWrapper.healthCheckPayload(status));
+        }
+
+    }
+
     // 정산기에서 메세지 수신
-    public void receivePayStationMessage(Channel channel, String message) {
-        Map<String, Object> receiveData = objectMapper.convertValue(message, new TypeReference<Map<String, Object>>() {});
+    @SneakyThrows
+    public void receivePayStationMessage(FacilityInfo facilityInfo, String message) {
+        Map<String, Object> receiveData = objectMapper.readValue(message, new TypeReference<Map<String, Object>>() {});
         String type = Objects.toString(receiveData.get("type"), "");
+
         switch (type) {
             case "vehicleListSearch": // 차량 목록 조회
-                // send gpms
-                /**
-                 */
-            case "adjustmentRequest": // 정산 요청 응답
-                /**
-                 */
-            case "payment": // 결제 응답 (결제 결과)
-                String host = channel.remoteAddress().toString();
-                FacilityInfo facilityInfo = config.findFacilityInfoByHost(host);
-                log.info("facilityInfo : {}", facilityInfo);
-                //facilityInfo.getFacilitiesId(); pathvariable URI
-
-                /**
-                 * send GPMS
-                 *
-                 * String host = ctx.channel().remoteAddress().toString();
-                 * FacilityInfo facilityInfo = config.findFacilityInfoByPort(host);
-                 * facilityInfo.getFacilitiesId();
-                 * pathvariable parameter 붙여서 보내기.
-                 *
-                 *
-                 */
+                // GPMS 에 토스
+                log.info(">>> 정산기({}) 차량 목록 조회 메세지 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                gpmsAPI.searchVehicle(facilityInfo.getDtFacilitiesId(), message);
                 break;
-            case "paymentFailure":
+            case "adjustmentRequest": // 정산 요청 응답
+                log.info(">>> 정산기({}) 정산 요청 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                gpmsAPI.sendPayment(facilityInfo.getDtFacilitiesId(), message);
+                break;
+            case "payment": // 결제 응답 (결제 결과)
+                log.info(">>> 정산기({}) 결제 응답 메세지 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                gpmsAPI.sendPaymentResponse(facilityInfo.getDtFacilitiesId(), message);
+                break;
             case "healthCheck":
+                log.info(">>> 정산기({}) 헬스체크 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                Map<String, String> contents = objectMapper.convertValue(receiveData.get("contents"), new TypeReference<Map<String, String>>(){});
+
+                // 정산기 연결 상태
+                String payStationStatus = Objects.toString(contents.get("paymentFailure"), "");
+
+                // 카드 리더기 연결 상태
+                String cardReaderStatus = Objects.toString(contents.get("icCardReaderFailure"), "");
+                gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
+                        Arrays.asList(
+                                FacilityStatus.payStationStatus(facilityInfo.getDtFacilitiesId(), payStationStatus),
+                                FacilityStatus.icCardReaderStatus(facilityInfo.getDtFacilitiesId(), cardReaderStatus)
+                        )
+                ));
+
+                break;
+
+            case "paymentFailure":
+                break;
             default:
+                log.info("정산기 메세지 수신: {}", message);
                 break;
         }
     }

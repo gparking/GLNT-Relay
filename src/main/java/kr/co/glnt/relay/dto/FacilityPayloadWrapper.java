@@ -13,7 +13,7 @@ public class FacilityPayloadWrapper {
         return new FacilityPayloadWrapper(payload);
     }
 
-    public static FacilityPayloadWrapper facilityAlarmPayload(List<FacilityAlarm> payload) {
+    public static FacilityPayloadWrapper facilityAlarmPayload(List<FacilityStatus> payload) {
         return new FacilityPayloadWrapper(payload);
     }
 }

@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class PayStationInfo {
-    private String facilityId;
+    private String dtFacilityId;
     private Object data;
 }

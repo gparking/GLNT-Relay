@@ -31,7 +31,7 @@ public class GlntFolderWatcher implements Runnable {
         }
         watchFolder.register(service, StandardWatchEventKinds.ENTRY_CREATE);
 
-        log.info(">>> {} Monitoring Start", facilityInfo.getImagePath());
+        log.info(">>>> {} 모니터링 시작", facilityInfo.getImagePath());
     }
 
     @SneakyThrows
@@ -49,12 +49,10 @@ public class GlntFolderWatcher implements Runnable {
                 }
 
                 String fullPath = getFullPath(event);
-
+                log.info(">>>> {}({}) 파일 생성: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath);
                 switch (BreakerFactory.valueOf(facilityInfo.generateGateLprType())) {
-                    // 입차 전방일 경우 이벤트 발생 시간을 정확하게 체크하기 위해 멀티스레드로 동작.
-                    // 보조 LPR 이 달려있을 경우는 이렇게 진행해야 정확.
-                    // 우선 보조 LPR 이 입차 전방에만 있다고 가정하여 이렇게 해놨지만
-                    // 추후 어떻게 될지 모르니 설계면에서 다시 생각 해봐야 함.
+                    // 보조 LPR 이 달려있을 경우 동시에 사진이 들어와
+                    // 이벤트 발생 시간을 정확하게 체크하기 위해 신규 스레드 생성.
                     case ININFRONT:
                     case OUTOUTFRONT:
                         new Thread(() ->

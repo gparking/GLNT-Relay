@@ -18,19 +18,19 @@ import java.util.TimeZone;
 public class ParkInOutPayload {
     private String uuid;
     private String vehicleNo;       // 인식된 차량번호 (Default: "", Success: 차량번호)
-    private String facilitiesId;    // 장치 아이디(어디 게이트에 어떤차단기)
+    private String dtFacilitiesId;    // 장치 아이디(어디 게이트에 어떤차단기)
     private String resultcode;      // OCR 판독 결과 코드
 
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime inDate;   // 차량 입차 시간
+    private LocalDateTime date;   // 차량 입차 시간
     private String base64Str;       // 사진파일 encode
 
     public ParkInOutPayload(String key, CarInfo carInfo) throws IOException {
         uuid = key;
         vehicleNo = carInfo.getNumber();
-        facilitiesId = carInfo.getFacilitiesId();
+        dtFacilitiesId = carInfo.getDtFacilitiesId();
         resultcode = String.valueOf(carInfo.getCode());
-        inDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(carInfo.getInDate()),
+        date = LocalDateTime.ofInstant(Instant.ofEpochMilli(carInfo.getInDate()),
                 TimeZone.getDefault().toZoneId());
         byte[] fileContent = FileUtils.readFileToByteArray(new File(carInfo.getFullPath()));
         base64Str = Base64.getEncoder().encodeToString(fileContent);
