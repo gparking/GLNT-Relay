@@ -1,15 +1,14 @@
 package kr.co.glnt.relay.service;
 
 
+import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.EventInfo;
 import kr.co.glnt.relay.dto.EventInfoGroup;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 /**
  * 출차 이벤트를 담당하는 클래스.
@@ -17,6 +16,9 @@ import java.util.TimerTask;
  */
 @Slf4j
 public class Exit extends Breaker {
+    // 출차 이벤트 큐
+    private Queue<EventInfoGroup> exitQueue = new LinkedList<>();
+
     public Exit(FacilityInfo facilityInfo) {
         super(facilityInfo);
     }
@@ -24,6 +26,8 @@ public class Exit extends Breaker {
     @Override
     public void startProcessing(EventInfo eventInfo) {
         long currentTime = eventInfo.getCreatedTime();
+        CarInfo carInfo = generatedCarInfo(eventInfo);
+        eventInfo.setCarInfo(carInfo);
         synchronized (this) {
 
             // 입차 프로세스와 동일하게
@@ -33,7 +37,7 @@ public class Exit extends Breaker {
                 lastRegTime = currentTime;
 
                 // 새로운 그룹 생성
-                EventInfoGroup group = EventQueueManager.addNewGroupToExitQueue(eventInfo);
+                EventInfoGroup group = addNewGroupToExitQueue(eventInfo);
 
                 // 1초후 비교로직 실행
                 startTimer();
@@ -46,11 +50,32 @@ public class Exit extends Breaker {
 
             } else {
                 // 신규 입차시 생성된 그룹에 이벤트 정보를 등록.
-                EventQueueManager.addElementToExitGroup(eventInfo);
+                addElementToExitGroup(eventInfo);
             }
         }
     }
 
+    // 새로운 출차차량 그룹을 생성 후 큐에 추가
+    public EventInfoGroup addNewGroupToExitQueue(EventInfo eventInfo) {
+        List<EventInfo> eventInfoList = new ArrayList<>();
+        eventInfoList.add(eventInfo);
+        EventInfoGroup group = new EventInfoGroup(eventInfoList);
+        exitQueue.offer(group);
+
+        return group;
+    }
+
+    // 현재 출차중인 차량정보를 그룹에 추가.
+    public void addElementToExitGroup(EventInfo eventInfo) {
+        exitQueue.peek()
+                .getEventList()
+                .add(eventInfo);
+    }
+
+    // 출차 큐에 쌓인 그룹을 반환
+    public EventInfoGroup pollExitQueue() {
+        return exitQueue.poll();
+    }
 
     private void startTimer() {
         new Timer().schedule(task(), timerTime);
@@ -60,7 +85,7 @@ public class Exit extends Breaker {
         return new TimerTask() {
             @Override
             public void run() {
-                EventInfoGroup eventGroup = EventQueueManager.pollExitQueue();
+                EventInfoGroup eventGroup = pollExitQueue();
                 List<CarInfo> carInfos = getCurrentGroupEventList(eventGroup);
 
                 // 그룹내에 등록된 차량 정보가 두개 이상일 때
@@ -77,9 +102,10 @@ public class Exit extends Breaker {
                         // 차량 리스트를 순회하며
                         // 같은 차량 번호가 아닐 때
                         if (!isEqualsCarNumber(carInfos)) {
-
                             // 출차 재요청.
                             gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
+                        } else {
+                            CommonUtils.deleteImageFile(carInfo.getFullPath());
                         }
                     }
                 }

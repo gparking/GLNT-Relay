@@ -9,5 +9,5 @@ import lombok.Data;
 public class EventInfo {
     private long createdTime = System.currentTimeMillis(); // 이벤트 발생 시간.
     private final String fullPath;                         // 파일 전체경로.
-
+    private CarInfo carInfo;                                // 자동차 정보
 }

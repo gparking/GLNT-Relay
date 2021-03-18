@@ -19,6 +19,7 @@ repositories {
     mavenCentral()
 }
 
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly 'org.projectlombok:lombok'
@@ -32,6 +33,11 @@ dependencies {
     implementation 'org.modelmapper:modelmapper:2.3.0'
     implementation 'commons-io:commons-io:2.6' // image file encode
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    compile 'org.springframework.boot:spring-boot-starter-webflux'
+    compileOnly("ch.qos.logback.contrib:logback-jackson:0.1.5")
+    compileOnly("ch.qos.logback.contrib:logback-json-classic:0.1.5")
+
 
     compile group: 'io.netty', name: 'netty-all', version: '4.1.42.Final'
 

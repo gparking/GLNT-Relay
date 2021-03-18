@@ -2,12 +2,11 @@ package kr.co.glnt.relay.web;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
@@ -15,6 +14,8 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,10 +29,12 @@ import java.util.Objects;
 @Component("gpmsAPI")
 public class GpmsAPI {
     private final RestTemplate template;
+    private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
-    public GpmsAPI(@Qualifier(value = "gpmsRestTemplate") RestTemplate template, ObjectMapper objectMapper) {
+    public GpmsAPI(@Qualifier(value = "gpmsRestTemplate") RestTemplate template, WebClient webClient, ObjectMapper objectMapper) {
         this.template = template;
+        this.webClient = webClient;
         this.objectMapper = objectMapper;
     }
 
@@ -41,7 +44,6 @@ public class GpmsAPI {
      * @param facilityInfoPayload 서버 정보 조회에 필요한 데이터.
      * @return ParkingFeature (서버정보)
      */
-    @SneakyThrows
     @Retryable(backoff = @Backoff(delay = 0))
     public List<FacilityInfo> getParkinglotData(FacilityInfoPayload facilityInfoPayload) {
         ResponseEntity<ResponseDTO> response = template.postForEntity("/v1/parkinglot/facility/list", facilityInfoPayload, ResponseDTO.class);
@@ -66,84 +68,95 @@ public class GpmsAPI {
 
 
     // 입차 차량 정보 전송
-    @Async
     public void requestEntranceCar(String key, CarInfo carInfo) {
-        try {
-            ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
-            ResponseDTO response = template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
-            if (response.getCode() == HttpStatus.CREATED.value()) {
-                deleteImageFile(carInfo);
+        log.info(">>>> 입차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}", key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
+        ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
+        Mono<ResponseDTO> response = webClient.post()
+                .uri("/v1/inout/parkin")
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(ResponseDTO.class);
+
+
+        response.subscribe(result -> {
+            if (200 <= result.getCode() && result.getCode() < 300) {
+                CommonUtils.deleteImageFile(carInfo.getFullPath());
             }
-        } catch (Exception e) {
-            log.error("입차 이미지 전송 실패", e);
-        }
+        });
     }
 
     // 출차 차량 정보 전송
-    @Async
     @Retryable(backoff = @Backoff(delay = 0))
     public void requestExitCar(String key, CarInfo carInfo) {
-        try {
-            ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
-            ResponseDTO response = template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
-            if (response.getCode() == HttpStatus.CREATED.value()) {
-                deleteImageFile(carInfo);
+        log.info(">>>> 출차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}", key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
+        ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
+        Mono<ResponseDTO> response = webClient.post()
+                .uri("/v1/inout/parkout")
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(ResponseDTO.class);
+
+
+        response.subscribe(result -> {
+            if (200 <= result.getCode() && result.getCode() < 300) {
+                CommonUtils.deleteImageFile(carInfo.getFullPath());
             }
-        } catch (Exception e) {
-            log.error("출차 이미지 전송 실패", e);
-        }
+        });
     }
 
 
     // 장비 헬스체크
-    @Async
     public void sendFacilityHealth(FacilityPayloadWrapper facilityStatusList) {
-        template.postForObject("/v1/relay/health_check", facilityStatusList, ResponseDTO.class);
+        webClient.post()
+                .uri("/v1/relay/health_check")
+                .bodyValue(facilityStatusList)
+                .retrieve()
+                .toBodilessEntity().subscribe();
     }
 
     // 시설물 관련 알림
-    @Async
     public void sendFacilityAlarm(FacilityPayloadWrapper facilityPayloadWrapper) {
-        try {
-            template.postForObject("/v1/relay/failure_alarm", facilityPayloadWrapper, ResponseDTO.class);
-        } catch (Exception e) {
-            log.error("시설물 관련 알림 전송 실패: ", e);
-        }
+        webClient.post()
+                .uri("/v1/relay/failure_alarm")
+                .bodyValue(facilityPayloadWrapper)
+                .retrieve()
+                .toBodilessEntity().subscribe();
     }
 
     // 장비 상태 정보
-    @Async
-    public void sendStatusNoti(Object object) {
-        template.postForObject("/v1/relay/status_noti", object, ResponseDTO.class);
+    public void sendStatusNoti(FacilityPayloadWrapper object) {
+        webClient.post()
+                .uri("/v1/relay/status_noti")
+                .bodyValue(object)
+                .retrieve()
+                .toBodilessEntity().subscribe();
     }
 
     // 정산 완료
     public void sendPaymentResponse(String id, String data) {
-        String url = String.format("/v1/relay/paystation/result/%s", id);
-        template.postForEntity(url, data, ResponseDTO.class);
+        webClient.post()
+                .uri("/v1/relay/paystation/result/{id}", id)
+                .bodyValue(data)
+                .retrieve()
+                .toBodilessEntity().subscribe();
     }
 
     // 출차시 미인식 차량 번호 조회
     public void searchVehicle(String id, String data) {
-        String url = String.format("/v1/relay/paystation/search/vehicle/%s", id);
-        template.postForObject(url, data, ResponseDTO.class);
+        webClient.post()
+                .uri("/v1/relay/paystation/search/vehicle/{id}", id)
+                .bodyValue(data)
+                .retrieve()
+                .toBodilessEntity().subscribe();
     }
 
     // 차량 번호 선택 후 정산 요청
     public void sendPayment(String id, String data) {
-        String url = String.format("/v1/relay/paystation/request/adjustment/%s", id);
-        template.postForObject(url, data, ResponseDTO.class);
+        webClient.post()
+                .uri("/v1/relay/paystation/request/adjustment/{id}", id)
+                .bodyValue(data)
+                .retrieve()
+                .toBodilessEntity().subscribe();
     }
-
-
-
-    // note: 공통 클래스 추출시 옮길것
-    private void deleteImageFile(CarInfo carInfo) throws IOException {
-        Path filePath = Paths.get(carInfo.getFullPath());
-        if (filePath.toFile().exists()) {
-            Files.delete(filePath);
-        }
-    }
-
 }
 

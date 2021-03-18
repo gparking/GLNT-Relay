@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 
 @ToString
 @Setter @Getter
-@Configuration
-@ConfigurationProperties("spring.server-config")
+@Configuration("serverConfig")
+@ConfigurationProperties("server-config")
 public class ServerConfig {
     private String gpmsUrl;
     private String ngisUrl;
@@ -28,12 +28,12 @@ public class ServerConfig {
     private DisplayResetMessage resetMessage;
 
 
-    public FacilityInfo findByFacilitiesId(String dtFacilitiesId) {
+    public FacilityInfo findByFacilitiesId(String type, String dtFacilitiesId) {
         return facilityList
                 .stream()
                 .filter(info->info.getDtFacilitiesId().equals(dtFacilitiesId))
                 .findFirst()
-                .orElseThrow(() -> new GlntBadRequestException("시설아이디를 확인해주세요."));
+                .orElseThrow(() -> new GlntBadRequestException("<!> " + type + " 시설아이디를 확인해주세요."));
     }
 
     public FacilityInfo findFacilityInfoByHost(String host) {
@@ -41,7 +41,7 @@ public class ServerConfig {
                 .stream()
                 .filter(info -> info.generateHost().equals(host))
                 .findFirst()
-                .orElseThrow(() -> new GlntBadRequestException("일치하는 host 가 없습니다."));
+                .orElseThrow(() -> new GlntBadRequestException("<!> 일치하는 host 가 없습니다."));
     }
 
     public List<FacilityInfo> findBreakerList() {

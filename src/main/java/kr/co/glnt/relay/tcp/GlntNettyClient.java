@@ -12,8 +12,8 @@ import io.netty.handler.timeout.IdleStateHandler;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityStatus;
+import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -24,17 +24,18 @@ import java.util.*;
 
 @Slf4j
 @Component
-@DependsOn("gpmsAPI")
 public class GlntNettyClient {
     private NioEventLoopGroup loopGroup;
     private final ObjectMapper objectMapper;
     private final ServerConfig config;
     private static Map<String, Channel> channelMap = new LinkedHashMap<>();
+    private final GpmsAPI gpmsAPI;
 
 
-    public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig) {
+    public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig, GpmsAPI gpmsAPI) {
         this.objectMapper = objectMapper;
         this.config = serverConfig;
+        this.gpmsAPI = gpmsAPI;
     }
 
     public void setFeatureCount(int featureCount) {
@@ -49,13 +50,17 @@ public class GlntNettyClient {
         try {
             bootstrap.group(loopGroup).channel(NioSocketChannel.class)
                     .remoteAddress(host, port)
+                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
+                    .option(ChannelOption.SO_LINGER, 0)     // 소켓을 close 했을 때 전송되지 않은 데이터를 무시
+                    .option(ChannelOption.SO_KEEPALIVE, true)
+                    .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast("idleStateHandler", new IdleStateHandler(3, 0, 0));
                             pipeline.addLast("glntIdleHandler", new GlntIdleHandler());
-                            pipeline.addLast(new GlntNettyHandler(objectMapper, config));
+                            pipeline.addLast(new GlntNettyHandler(objectMapper, config, gpmsAPI));
                         }
                     });
             ChannelFuture channelFuture = bootstrap.connect().sync();
@@ -65,7 +70,8 @@ public class GlntNettyClient {
                     if (!future.isSuccess()) {
                         future.channel().close();
                         bootstrap.connect(host, port).addListener(this);
-                    } else {
+                    }
+                    else {
                         addCloseDetectListener(future.channel());
                     }
                 }
@@ -82,6 +88,7 @@ public class GlntNettyClient {
 
             channelMap.put(String.format("%s:%d", host, port), channelFuture.channel());
         } catch (Exception e) {
+            log.error(">>>> connection err: {}", e.getMessage());
             reconnect(host, port);
         }
     }
@@ -126,7 +133,7 @@ public class GlntNettyClient {
 
     // 시설물 아이디와 일치하는 채널의 상태를 리턴
     public List<FacilityStatus> getChannelStatus(String facilityID) {
-        String host = config.findByFacilitiesId(facilityID).generateHost();
+        String host = config.findByFacilitiesId("연결 확인", facilityID).generateHost();
         String healthStatus = getHealthStatus(channelMap.get(host));
 
         FacilityStatus facilityStatus = FacilityStatus.deviceHealth(facilityID, healthStatus);
@@ -146,7 +153,7 @@ public class GlntNettyClient {
     }
 
     public FacilityStatus getLrpStatus(String facilityID) {
-        FacilityInfo info = config.findByFacilitiesId(facilityID);
+        FacilityInfo info = config.findByFacilitiesId("LPR 확인", facilityID);
         String healthStatus = sendPing(info.getIp());
         return FacilityStatus.deviceHealth(info.getFacilitiesId(), healthStatus);
     }
@@ -158,7 +165,7 @@ public class GlntNettyClient {
         try {
             isActive = InetAddress.getByName(ip).isReachable(1000);
         } catch (IOException e) {
-            log.error("Ping 신호 보내기 실패: ", e.getMessage());
+            log.error("<!> ping 보내기 실패: ", e.getMessage());
         }
         return isActive
                 ? "NORMAL"

@@ -28,10 +28,10 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private final ObjectMapper objectMapper;
     private final GpmsAPI gpmsAPI;
 
-    public GlntNettyHandler(ObjectMapper objectMapper, ServerConfig config) {
+    public GlntNettyHandler(ObjectMapper objectMapper, ServerConfig config, GpmsAPI gpmsAPI) {
         this.config = config;
         this.objectMapper = objectMapper;
-        this.gpmsAPI = ApplicationContextProvider.getApplicationContext().getBean("gpmsAPI", GpmsAPI.class);
+        this.gpmsAPI = gpmsAPI;
     }
 
     // TCP 연결 성공
@@ -43,6 +43,20 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
                 Arrays.asList(FacilityStatus.reconnect(facilityInfo.getDtFacilitiesId()))
         ));
+
+
+        // 서버가 구동되고 첫 연결시에는 barStatus 가 null 이므로 여기서 함수 종료
+        if (Objects.isNull(facilityInfo.getBarStatus())) {
+            return;
+        }
+
+        // 재연결시 barStatus 가 lock 일 경우 다시 lock 상태로 변경.
+        if (facilityInfo.getBarStatus().equals("GATE UNLOCK OK")) {
+            char stx = 0x02, etx = 0x03;
+            String msg = String.format("%s%s%s", stx, "GATE UPLOCK", etx);
+            ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("ASCII"));
+            ctx.channel().writeAndFlush(byteBuf);
+        }
     }
 
 
@@ -76,7 +90,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             return;
         }
 
-        log.info(">>>> {}({})메세지 수신: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), message);
+        log.info(">>>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), message);
     }
 
 
@@ -101,21 +115,20 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         String id = facilityInfo.getDtFacilitiesId();
         String msg = MESSAGE.matcher(message).replaceAll("");
 
-        log.info(">>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), id, msg);
+        log.info(">>>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), id, msg);
 
         // TODO: 차단기 리셋시 리셋 전 상태값을 가져와 uplock 일경우 uplock 으로 변경해주기.
 
         if (facilityInfo.getFname().equals("출구")) {
             exitBreakerTask(facilityInfo, msg);
-
         } else {
-            // 차단기가 내려가 가는 중이거나 내려가 있을 경우
+            // DetectOut 을 밟았을 경우
             if (message.contains("DET OUT")) {
                 // 입차 대기 중인 차량이 있는지 확인 후 있을 경우
                 if (facilityInfo.getOpenMessageQueue().size() > 1) {
                     ByteBuf byteBuf = Unpooled.copiedBuffer(facilityInfo.getOpenMessageQueue().poll(), Charset.forName("ASCII"));
                     channel.writeAndFlush(byteBuf);
-                    log.info(">>> {}({}) DOWN - 대기중인 차량: {}", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
+                    log.info(">>>> {}({}) {}대 대기중", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
                 }
             }
         }
@@ -190,19 +203,19 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         switch (type) {
             case "vehicleListSearch": // 차량 목록 조회
                 // GPMS 에 토스
-                log.info(">>> 정산기({}) 차량 목록 조회 메세지 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                log.info(">>>> 정산기({}) 차량 목록 조회 메세지 수신: {}", facilityInfo.getDtFacilitiesId(), message);
                 gpmsAPI.searchVehicle(facilityInfo.getDtFacilitiesId(), message);
                 break;
             case "adjustmentRequest": // 정산 요청 응답
-                log.info(">>> 정산기({}) 정산 요청 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                log.info(">>>> 정산기({}) 정산 요청 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
                 gpmsAPI.sendPayment(facilityInfo.getDtFacilitiesId(), message);
                 break;
             case "payment": // 결제 응답 (결제 결과)
-                log.info(">>> 정산기({}) 결제 응답 메세지 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                log.info(">>>> 정산기({}) 결제 응답 메세지 수신: {}", facilityInfo.getDtFacilitiesId(), message);
                 gpmsAPI.sendPaymentResponse(facilityInfo.getDtFacilitiesId(), message);
                 break;
             case "healthCheck":
-                log.info(">>> 정산기({}) 헬스체크 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                log.info(">>>> 정산기({}) 헬스체크 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
                 Map<String, String> contents = objectMapper.convertValue(receiveData.get("contents"), new TypeReference<Map<String, String>>(){});
 
                 // 정산기 연결 상태
@@ -220,9 +233,10 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 break;
 
             case "paymentFailure":
+                log.info(">>>> 정산 실패: {}", message);
                 break;
             default:
-                log.info("정산기 메세지 수신: {}", message);
+                log.info(">>>> 정산기 메세지 수신: {}", message);
                 break;
         }
     }

@@ -35,9 +35,9 @@ public class FacilityInfo {
     private String fname;
     private String barStatus = "init";     // 차단기 Open/Close/UpLock
     private int passCount;
-    private boolean state;      // 차단기 전원 상태
+    private int checkTime;      // 차단기 상태 확인 반복시간
+    private boolean active;     // 양방향 통신일때 차단기 활성화 여부. (입차시에는 true, 출차시에는 false)
     private LocalDateTime lastActionTime = LocalDateTime.now();
-    private int checkTime;
     private Queue<String> openMessageQueue = new LinkedList<>();    // 차량이 갇히는거를 방지하기
                                                                     // 위해 open 메세지는 모아놨다가 닫힐때 연다.
     private Timer timer = new Timer();  // openMessageQueue 리셋용 타이머
@@ -71,8 +71,8 @@ public class FacilityInfo {
             @Override
             public void run() {
                 openMessageQueue.clear();
-                log.info(">>> {} 오픈 메세지 큐 초기화", fname);
+                log.info(">>>> {} 오픈 메세지 큐 초기화", fname);
             }
-        }, 60 * 1000);
+        }, (60 * 1000) * 5);
     }
 }

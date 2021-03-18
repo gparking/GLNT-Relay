@@ -23,7 +23,7 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
         headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
         headers.setBasicAuth("", "");
 
-        URI uri = request.getURI();
+//        URI uri = request.getURI();
 //        traceRequest(request, body);
         ClientHttpResponse response = execution.execute(request, body);
 //        traceResponse(response, uri);

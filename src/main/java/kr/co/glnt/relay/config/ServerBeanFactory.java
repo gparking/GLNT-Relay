@@ -7,12 +7,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.ResponseDTO;
 import org.modelmapper.ModelMapper;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.http.*;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -23,6 +22,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import javax.xml.ws.Response;
@@ -30,6 +30,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Objects;
 
+@DependsOn("serverConfig")
 @Configuration
 public class ServerBeanFactory {
 
@@ -50,28 +51,9 @@ public class ServerBeanFactory {
         return generateRestTemplate(serverConfig.getNgisUrl());
     }
 
-    public RestTemplate generateRestTemplate(String url) {
-        SimpleClientHttpRequestFactory clientHttpRequestFactory = new SimpleClientHttpRequestFactory();
-        clientHttpRequestFactory.setReadTimeout(5000);
-        clientHttpRequestFactory.setConnectTimeout(5000);
-
-        RestTemplate restTemplate = new RestTemplate(new BufferingClientHttpRequestFactory(clientHttpRequestFactory)) {
-            @Override
-            @Retryable(value = {Exception.class}, maxAttempts = 3, backoff = @Backoff(delay = 100))
-            public <T>ResponseEntity<T> exchange(URI url, HttpMethod method, HttpEntity<?> requestEntity, Class<T> responseType) throws RestClientException{
-                return super.exchange(url, method, requestEntity, responseType);
-            }
-
-            @Recover
-            public <T> ResponseEntity<ResponseDTO> exchangeRecover(Exception e) {
-                return ResponseEntity.badRequest().body(new ResponseDTO(HttpStatus.BAD_REQUEST)); // 3
-            }
-        };
-
-        restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(url));
-        restTemplate.getInterceptors().add(new RestTemplateLoggingInterceptor());
-        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
-        return restTemplate;
+    @Bean("webClient")
+    public WebClient webClient() {
+        return generateWebClient();
     }
 
     @Bean
@@ -92,4 +74,24 @@ public class ServerBeanFactory {
         return modelMapper;
     }
 
+
+    public RestTemplate generateRestTemplate(String url) {
+        SimpleClientHttpRequestFactory clientHttpRequestFactory = new SimpleClientHttpRequestFactory();
+        clientHttpRequestFactory.setReadTimeout(5000);
+        clientHttpRequestFactory.setConnectTimeout(5000);
+
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(url));
+        restTemplate.getInterceptors().add(new RestTemplateLoggingInterceptor());
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+        return restTemplate;
+    }
+
+    public WebClient generateWebClient() {
+        return WebClient.builder()
+                .baseUrl(serverConfig.getGpmsUrl())
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
 }

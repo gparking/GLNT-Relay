@@ -12,6 +12,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.annotation.Async;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Order(1)
 @Component
 public class AppRunner {
     private ThreadPoolTaskScheduler scheduler;
@@ -99,7 +101,7 @@ public class AppRunner {
         client.setFeatureCount(facilityInfos.size());
 
         facilityInfos.forEach(info -> {
-//            client.connect(info.getIp(), info.getPort());
+            client.connect(info.getIp(), info.getPort());
         });
     }
 
@@ -113,14 +115,25 @@ public class AppRunner {
 
         List<FacilityInfo> facilityList = config.getFacilityList();
 
-        // 2. data grouping (in gate / out gate)
-        Map<String, List<FacilityInfo>> parkingGroup = facilityList.stream()
-                .filter(info -> Objects.nonNull(info.getImagePath()))
-                .collect(Collectors.groupingBy(FacilityInfo::getImagePath));
+        // 1. data grouping (in gate / out gate)
+        Map<String, FacilityInfo> lprGroup = facilityList.stream()
+                .filter(info -> Objects.nonNull(info.getImagePath()) && !info.getImagePath().isEmpty())
+                .collect(Collectors.toMap(i -> i.getImagePath(), j -> j));
 
-        // 2. watcher thread 실행
-        parkingGroup.forEach((key, value) -> {
-            GlntFolderWatcher watcher = new GlntFolderWatcher(value.get(0));
+
+        // 2. gateId 로 게이트별 lpr 을 묶고
+        Map<String, List<FacilityInfo>> gateIdGroup = lprGroup.values().stream()
+                .collect(Collectors.groupingBy(FacilityInfo::getGateId));
+
+
+        // 3. watcher thread 실행
+        lprGroup.forEach((key, value) -> {
+            // gateType + lprType 을 키로 시설정보를 가지고있는 Map 을 생성
+            Map<String, FacilityInfo> gateLprMap = gateIdGroup.get(value.getGateId()).stream()
+                    .collect(Collectors.toMap(i -> i.generateGateLprType(), j -> j));
+
+            // 각 watcher 에 group 을 저장
+            GlntFolderWatcher watcher = new GlntFolderWatcher(value, gateLprMap);
             new Thread(watcher).start();
         });
     }
@@ -152,7 +165,6 @@ public class AppRunner {
 
 
     public Trigger getTrigger() {
-        // todo: 시간 설정. config에서 가져와야함.
         log.info(">>>> 차단기 상태 확인 설정된 시간: {}", config.getCheckTime());
         return new PeriodicTrigger(config.getCheckTime(), TimeUnit.MINUTES);
     }

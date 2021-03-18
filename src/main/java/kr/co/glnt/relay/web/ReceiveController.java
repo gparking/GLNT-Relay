@@ -17,7 +17,6 @@ import java.util.*;
 @Slf4j
 @RestController
 public class ReceiveController {
-
     private final GlntNettyClient client;
     private final ServerConfig serverConfig;
     private final ObjectMapper objectMapper;
@@ -55,42 +54,46 @@ public class ReceiveController {
 
 
 
-
-
     /**
      * 정산기 메세지 명령
      */
     @SneakyThrows
     @PostMapping("/v1/parkinglot/paystation")
     public void parkingCostCalculator(@RequestBody PayStationInfo payStationInfo) {
-        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(payStationInfo.getDtFacilityId());
-        log.info(">>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), objectMapper.writeValueAsString(payStationInfo));
-        client.sendMessage(facilityInfo.generateHost(), objectMapper.writeValueAsString(payStationInfo.getData()), Charset.forName("UTF-8"));
+        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId("정산기", payStationInfo.getDtFacilityId());
+        String msg = objectMapper.writeValueAsString(payStationInfo.getData());
+        log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
+        client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("UTF-8"));
     }
 
     /**
      * 게이트 차단기 명령
      */
-    @GetMapping("/v1/breaker/{dtFacilityId}/{command}")
+    @GetMapping(value = {"/v1/breaker/{dtFacilityId}/{command}", "/v1/breaker/{dtFacilityId}/{command}/{manual}"})
     public void breakerBarOpenTask(@PathVariable("dtFacilityId") String dtFacilityId,
-                                   @PathVariable("command") String breakerCommand) {
-        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(dtFacilityId);
+                                   @PathVariable("command") String breakerCommand,
+                                   @PathVariable(required = false, name = "manual") String manual) {
+        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId("차단기", dtFacilityId);
         Map<String, String> commandMap = serverConfig.getBreakerCommand();
         String command = commandMap.get(breakerCommand);
         if (Objects.isNull(command))
-            throw new GlntBadRequestException("잘못된 명령어입니다.");
+            throw new GlntBadRequestException("<!> 잘못된 명령어입니다.");
 
 
         char stx = 0x02, etx = 0x03;
-        if (facilityInfo.getBarStatus().contains("GATE UP")) {
-            int openQueueSize = facilityInfo.getOpenMessageQueue().size();
-            log.info(">>> 차단기({}) UP - 대기중인 차량: {}", dtFacilityId, openQueueSize);
-            facilityInfo.addOpenMessage(String.format("%s%s%s", stx, command, etx));
+        String msg = String.format("%s%s%s", stx, command, etx);
+        if (command.equals("GATE UP") && facilityInfo.getBarStatus().contains("GATE UP")) {
+            if (Objects.isNull(manual)) {
+                facilityInfo.addOpenMessage(msg);
+                int openQueueSize = facilityInfo.getOpenMessageQueue().size();
+                log.info(">>>> {}({}) 대기중인 차량: {}", facilityInfo.getFname(), dtFacilityId, openQueueSize);
+            }
         }
 
-        log.info(">>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), dtFacilityId, command);
+        manual = manual != null ? "수동" : "자동";
+        log.info(">>>> {}({}) {} 메세지: {}", facilityInfo.getFname(),dtFacilityId, manual, command);
 
-        client.sendMessage(facilityInfo.generateHost(), String.format("%s%s%s", stx, command, etx), Charset.forName("ASCII"));
+        client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("ASCII"));
     }
 
 

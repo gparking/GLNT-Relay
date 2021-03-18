@@ -27,7 +27,7 @@ public class DisplayService {
 
     public void sendDisplayMessage(DisplayMessage message) {
         // 시설물 정보 가져오기.
-        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId(message.getDtFacilityId());
+        FacilityInfo facilityInfo = serverConfig.findByFacilitiesId("전광판", message.getDtFacilityId());
 
         // 메세지 추출
         List<String> messageList = generateMessageList(message.getMessages());
@@ -56,7 +56,7 @@ public class DisplayService {
     // 메세지 전송.
     public void sendMessage(FacilityInfo facilityInfo, List<String> messageList) {
         messageList.forEach(msg -> {
-                    log.info(">>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
+                    log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
                     client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"));
                 }
         );
@@ -67,11 +67,9 @@ public class DisplayService {
         if (displayTimer.containsKey(facilityInfo.getDtFacilitiesId())) {
             Timer timer = displayTimer.get(facilityInfo.getDtFacilitiesId());
             timer.cancel();
-            timer = resetDisplayTimer(facilityInfo);
-        } else {
-            displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo));
+            timer = null;
         }
-
+        displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo));
     }
 
     // 전광판 리셋.
@@ -89,6 +87,7 @@ public class DisplayService {
                 }
 
                 sendMessage(facilityInfo, generateMessageList(messages));
+                displayTimer.remove(facilityInfo.getDtFacilitiesId());
             }
         }, 5 * 1000);
 

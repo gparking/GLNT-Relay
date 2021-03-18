@@ -1,6 +1,7 @@
 package kr.co.glnt.relay.dto;
 
 import lombok.Data;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -25,7 +26,8 @@ public class ParkInOutPayload {
     private LocalDateTime date;   // 차량 입차 시간
     private String base64Str;       // 사진파일 encode
 
-    public ParkInOutPayload(String key, CarInfo carInfo) throws IOException {
+    @SneakyThrows
+    public ParkInOutPayload(String key, CarInfo carInfo) {
         uuid = key;
         vehicleNo = carInfo.getNumber();
         dtFacilitiesId = carInfo.getDtFacilitiesId();
