@@ -4,23 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.*;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -68,8 +62,8 @@ public class GpmsAPI {
 
 
     // 입차 차량 정보 전송
-    public void requestEntranceCar(String key, CarInfo carInfo) {
-        log.info(">>>> 입차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}", key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
+    public void requestEntranceCar(String type, String key, CarInfo carInfo) {
+        log.info(">>>> {} 입차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}",type, key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
         ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
         Mono<ResponseDTO> response = webClient.post()
                 .uri("/v1/inout/parkin")

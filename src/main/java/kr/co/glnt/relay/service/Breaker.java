@@ -84,23 +84,17 @@ public abstract class Breaker {
     }
 
 
-    /**
-     * 1초 이내에 들어온 입차자량 리스트를 비교해
-     * 미인식(오인식 포함) 제외한 차량만 조회하여
-     * 차량번호가 같은지 비교한다.
-     */
     protected boolean isEqualsCarNumber(List<CarInfo> carInfos) {
-        for (int i = 0; i < carInfos.size(); i++) {
+        CarInfo firstCar = carInfos.get(0);
 
-            // 정상 처리된 차량 번호일 경우
-            if (carInfos.get(i).ocrValidate()) {
-                for (int j = i + 1; j < carInfos.size(); j++) {
+        for (int i = 1; i < carInfos.size(); i++) {
+            // 정상차량이 아니면 같은 차량으로 처리한다.
+            if (!carInfos.get(i).ocrValidate()) {
+                return true;
+            }
 
-                    // Main LPR 과 Sub LPR 의 차량 번호를 같은지 비교
-                    if (carInfos.get(i).getNumber().equals(carInfos.get(j).getNumber())) {
-                        return true;
-                    }
-                }
+            if (firstCar.getNumber().equals(carInfos.get(i).getNumber())) {
+                return true;
             }
         }
 

@@ -23,7 +23,7 @@ import java.util.*;
 public class Entrance extends Breaker {
     // 입차 전방 이벤트를 처리하기 위해 필요한 큐
     private Queue<EventInfoGroup> entranceFrontQueue = new LinkedList<>();
-
+    private EventInfoGroup previousGroup;
     public Entrance(FacilityInfo facilityInfo) {
         super(facilityInfo);
     }
@@ -55,7 +55,7 @@ public class Entrance extends Breaker {
                     // generatedCarInfo(차량 번호를 추출)
                     // 차량정보를 GPMS 서버에 전송.
                     new Thread(() -> {
-                        gpmsAPI.requestEntranceCar(group.getKey(), carInfo);
+                        gpmsAPI.requestEntranceCar("전방", group.getKey(), carInfo);
                     }).start();
                 } else {
                     addElementToFrontGroup(eventInfo);
@@ -108,15 +108,21 @@ public class Entrance extends Breaker {
                 // (보조 LPR 이 달려있을 경우)
                 if (carInfos.size() > 1) {
                     // 메인 LPR 에서 검출한 차량번호와
-                    // 동일하면 무시하고 아닐경우 차량번호를 전송.
-                    if (!isEqualsCarNumber(carInfos)) {
-                        gpmsAPI.requestEntranceCar(eventGroup.getKey(), carInfos.get(carInfos.size()-1));
-                    } else {
+                    // 동일하면 파일 삭제
+                    // 아니면 전송.
+                    if (isEqualsCarNumber(carInfos)) {
                         CommonUtils.deleteImageFile(carInfos.get(carInfos.size()-1).getFullPath());
+                    } else {
+                        gpmsAPI.requestEntranceCar("전방", eventGroup.getKey(), carInfos.get(carInfos.size()-1));
                     }
                 }
 
             }
         };
+    }
+
+
+    public EventInfoGroup getPreviousGroup() {
+        return this.previousGroup;
     }
 }
