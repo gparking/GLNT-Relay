@@ -8,6 +8,7 @@ import kr.co.glnt.relay.service.BreakerFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +41,11 @@ public class GlntFolderWatcher implements Runnable {
     @Override
     public void run() {
         Breaker breaker = BreakerFactory.getInstance(facilityInfo);
-        for (; ; ) {
+        for (;;) {
             WatchKey key = null;
             key = service.take();
             List<WatchEvent<?>> events = key.pollEvents();
+
             for (WatchEvent<?> event : events) {
                 WatchEvent.Kind<?> kind = event.kind();
                 if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
@@ -51,7 +53,7 @@ public class GlntFolderWatcher implements Runnable {
                 }
 
                 String fullPath = getFullPath(event);
-                log.info(">>>> {}({}) 파일 생성: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath);
+                log.info(">>>> {}({}) 파일 생성: {}, size: {} bytes", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath);
                 switch (BreakerFactory.valueOf(facilityInfo.generateGateLprType())) {
                     // 보조 LPR 이 달려있을 경우 동시에 사진이 들어와
                     // 이벤트 발생 시간을 정확하게 체크하기 위해 신규 스레드 생성.

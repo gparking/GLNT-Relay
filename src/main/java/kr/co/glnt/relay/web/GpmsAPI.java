@@ -6,6 +6,8 @@ import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
@@ -15,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -73,9 +76,8 @@ public class GpmsAPI {
 
 
         response.subscribe(result -> {
-            if (200 <= result.getCode() && result.getCode() < 300) {
-                CommonUtils.deleteImageFile(carInfo.getFullPath());
-            }
+            log.info(">>>> gpms filesize: {}", new File(carInfo.getFullPath()).length());
+            CommonUtils.deleteImageFile(carInfo.getFullPath());
         });
     }
 

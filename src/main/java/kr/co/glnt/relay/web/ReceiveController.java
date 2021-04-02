@@ -85,12 +85,11 @@ public class ReceiveController {
         if (command.equals("GATE UP") && facilityInfo.getBarStatus().contains("GATE UP")) {
             if (Objects.isNull(manual)) {
                 facilityInfo.addOpenMessage(msg);
-                int openQueueSize = facilityInfo.getOpenMessageQueue().size();
-                log.info(">>>> {}({}) 대기중인 차량: {}", facilityInfo.getFname(), dtFacilityId, openQueueSize);
             }
         }
 
         manual = manual != null ? "수동" : "자동";
+
         log.info(">>>> {}({}) {} 메세지: {}", facilityInfo.getFname(),dtFacilityId, manual, command);
 
         client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("ASCII"));

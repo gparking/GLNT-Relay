@@ -44,7 +44,6 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 Arrays.asList(FacilityStatus.reconnect(facilityInfo.getDtFacilitiesId()))
         ));
 
-
         // 서버가 구동되고 첫 연결시에는 barStatus 가 null 이므로 여기서 함수 종료
         if (Objects.isNull(facilityInfo.getBarStatus())) {
             return;
@@ -124,11 +123,14 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         } else {
             // DetectOut 을 밟았을 경우
             if (message.contains("DET OUT")) {
-                // 입차 대기 중인 차량이 있는지 확인 후 있을 경우
-                if (facilityInfo.getOpenMessageQueue().size() > 1) {
-                    ByteBuf byteBuf = Unpooled.copiedBuffer(facilityInfo.getOpenMessageQueue().poll(), Charset.forName("ASCII"));
-                    channel.writeAndFlush(byteBuf);
-                    log.info(">>>> {}({}) {}대 대기중", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
+                // 입차 대기 큐에서 하나를 빼고
+                String rebound = facilityInfo.getOpenMessageQueue().poll();
+                if (rebound != null) {
+                    if (facilityInfo.getOpenMessageQueue().size() > 0) {
+                        ByteBuf byteBuf = Unpooled.copiedBuffer(rebound, Charset.forName("ASCII"));
+                        channel.writeAndFlush(byteBuf);
+                        log.info(">>>> {}({}) {}대 대기중", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
+                    }
                 }
             }
         }

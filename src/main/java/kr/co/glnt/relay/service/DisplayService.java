@@ -16,7 +16,7 @@ public class DisplayService {
     private final ServerConfig serverConfig;
     private final GlntNettyClient client;
 
-    private final List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
+    private final List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/S1000/Y0408/E0606/%s%s!]");
     private Map<String, Timer> displayTimer;
 
     public DisplayService(ServerConfig serverConfig, GlntNettyClient client) {

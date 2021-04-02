@@ -20,7 +20,7 @@ public class GlntIdleHandler extends ChannelDuplexHandler {
                 String host = ctx.channel().remoteAddress().toString();
                 String ip = host.substring(1, host.indexOf(":"));
 
-                boolean isActive = InetAddress.getByName(ip).isReachable(1500);
+                boolean isActive = InetAddress.getByName(ip).isReachable(3000);
                 if (!isActive) {
                     ctx.close();
                 }

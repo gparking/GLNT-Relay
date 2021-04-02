@@ -28,7 +28,6 @@ public class Entrance extends Breaker {
         super(facilityInfo);
     }
 
-    @SneakyThrows
     @Override
     public void startProcessing(EventInfo eventInfo) {
         try {
@@ -78,17 +77,10 @@ public class Entrance extends Breaker {
     }
 
 
-
     // 현재 입차중인 차량 정보를 그룹에 추가
     public void addElementToFrontGroup(EventInfo info) {
         EventInfoGroup group = entranceFrontQueue.peek();
         group.getEventList().add(info);
-    }
-
-
-    // 입차 전방 이벤트 그룹을 반환
-    public EventInfoGroup pollEntranceFrontQueue() {
-        return entranceFrontQueue.poll();
     }
 
     // 타이머 설정.
@@ -101,7 +93,8 @@ public class Entrance extends Breaker {
             @SneakyThrows
             @Override
             public void run() {
-                EventInfoGroup eventGroup = pollEntranceFrontQueue();
+                // 입차 전방 이벤트 그룹을 반환
+                EventInfoGroup eventGroup = entranceFrontQueue.poll();
                 List<CarInfo> carInfos = getCurrentGroupEventList(eventGroup);
 
                 // 그룹내에 등록된 차량 정보가 두개 이상일 때

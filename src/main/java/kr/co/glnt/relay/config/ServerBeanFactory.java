@@ -48,7 +48,7 @@ public class ServerBeanFactory {
 
     @Bean("ngisRestTemplate")
     public RestTemplate ngisRestTemplate() {
-        return generateRestTemplate(serverConfig.getNgisUrl());
+        return generateNgisRestTemplate(serverConfig.getNgisUrl());
     }
 
     @Bean("webClient")
@@ -83,6 +83,18 @@ public class ServerBeanFactory {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(url));
         restTemplate.getInterceptors().add(new RestTemplateLoggingInterceptor());
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+        return restTemplate;
+    }
+
+    public RestTemplate generateNgisRestTemplate(String url) {
+        SimpleClientHttpRequestFactory clientHttpRequestFactory = new SimpleClientHttpRequestFactory();
+        clientHttpRequestFactory.setReadTimeout(5000);
+        clientHttpRequestFactory.setConnectTimeout(5000);
+
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(url));
+        restTemplate.getInterceptors().add(new NgisLoggingInterceptor());
         restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
         return restTemplate;
     }

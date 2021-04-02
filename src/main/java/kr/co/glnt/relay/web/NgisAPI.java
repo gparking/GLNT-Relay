@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.util.Objects;
 
 @Slf4j
@@ -43,6 +44,25 @@ public class NgisAPI {
     @SneakyThrows
     @Synchronized
     public CarInfo requestOCR(String imagePath) {
+        File file = new File(imagePath);
+        long currentSize = file.length();
+        log.info(">>>> event fileSize: {}bytes", currentSize);
+
+        long startTime = System.currentTimeMillis();
+        long timeoutNanos = 500;
+        long waitTime = timeoutNanos;
+
+        for (;;) {
+            if (new File(imagePath).length() == currentSize) {
+                break;
+            }
+            waitTime = timeoutNanos - (System.currentTimeMillis() - startTime);
+            if (waitTime <= 0) {
+                log.info(">>>> file wait timeout");
+                break;
+            }
+        }
+        log.info(">>>> ocr fileSize: {}bytes", file.length());
         ResponseDTO response = template.postForObject("/ocr", objectMapper.writeValueAsString(imagePath), ResponseDTO.class);
         if (hasError(response)) {
             return null;
@@ -64,6 +84,4 @@ public class NgisAPI {
         }
         return false;
     }
-
-
 }

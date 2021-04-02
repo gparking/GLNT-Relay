@@ -24,7 +24,6 @@ public class EntranceBack extends Breaker {
      * 후방 카메라는 하나만 있다고 가정하고 작업을 시작하지.
      *
      * 0. 일단 다 보내는걸로 key 는 empty
-
      * @param eventInfo
      */
     @Override
@@ -34,6 +33,12 @@ public class EntranceBack extends Breaker {
             if(carInfo.ocrValidate()) {
                 gpmsAPI.requestEntranceCar("후방", "", generatedCarInfo(eventInfo));
             } else {
+                if (Objects.nonNull(carInfo)) {
+                    if (carInfo.getCode() == -1) {
+                        log.info("인식도중 에러: {}", carInfo.getNumber());
+                    }
+                }
+
                 CommonUtils.deleteImageFile(carInfo.getFullPath());
             }
 

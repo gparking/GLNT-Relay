@@ -14,6 +14,7 @@ import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityStatus;
 import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 @Slf4j
+@DependsOn("gpmsAPI")
 @Component
 public class GlntNettyClient {
     private NioEventLoopGroup loopGroup;
@@ -108,7 +110,7 @@ public class GlntNettyClient {
     // 시설물에 메세지 전송. (차단기, 전광판, 정산기)
     public void sendMessage(String host, String msg, Charset charset) {
         if (!channelMap.containsKey(host)) {
-            log.warn("<!> is not found {}", host);
+            log.info("<!> channel is not found {}", host);
             return;
         }
         ByteBuf byteBuf = Unpooled.copiedBuffer(msg, charset);
