@@ -27,7 +27,7 @@ public class NgisLoggingInterceptor implements ClientHttpRequestInterceptor {
         ClientHttpResponse response = execution.execute(request, body);
         traceResponse(response, uri);
 
-        return execution.execute(request, body);
+        return response;
     }
 
     private void traceRequest(HttpRequest request, byte[] body) {

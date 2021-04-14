@@ -1,13 +1,11 @@
 package kr.co.glnt.relay.tcp;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.net.InetAddress;
 
 @Slf4j

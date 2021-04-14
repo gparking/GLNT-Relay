@@ -5,8 +5,8 @@ spring:
     throw-exception-if-no-handler-found: true
 
 server-config:
-  gpms-url: "http://localhost:13000"
-  ngis-url: "http://localhost:7777"
+  gpms-url: http://localhost:13000
+  ngis-url: http://localhost:7777
   server-key: "GATESVR1"
   check-time: 30
   breaker-command:

@@ -56,6 +56,11 @@ public class ServerBeanFactory {
         return generateWebClient();
     }
 
+    @Bean("ngisClient")
+    public WebClient ngisClient() {
+        return generateNgisClient();
+    }
+
     @Bean
     public ObjectMapper objectMapper() {
         return Jackson2ObjectMapperBuilder.json()
@@ -102,6 +107,14 @@ public class ServerBeanFactory {
     public WebClient generateWebClient() {
         return WebClient.builder()
                 .baseUrl(serverConfig.getGpmsUrl())
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
+
+    public WebClient generateNgisClient() {
+        return WebClient.builder()
+                .baseUrl(serverConfig.getNgisUrl())
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
                 .build();

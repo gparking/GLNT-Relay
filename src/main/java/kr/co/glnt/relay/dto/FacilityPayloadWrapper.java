@@ -2,9 +2,11 @@ package kr.co.glnt.relay.dto;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 import java.util.List;
 
+@ToString
 @Getter @RequiredArgsConstructor
 public class FacilityPayloadWrapper {
     private final Object facilitiesList;

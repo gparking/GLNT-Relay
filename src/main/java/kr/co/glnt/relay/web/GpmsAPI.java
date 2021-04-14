@@ -6,8 +6,6 @@ import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
@@ -67,22 +65,27 @@ public class GpmsAPI {
     // 입차 차량 정보 전송
     public void requestEntranceCar(String type, String key, CarInfo carInfo) {
         log.info(">>>> {} 입차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}",type, key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
+
         ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
+
+        log.info(">>>> gpms filesize: {}", new File(carInfo.getFullPath()).length());
+
         Mono<ResponseDTO> response = webClient.post()
                 .uri("/v1/inout/parkin")
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(ResponseDTO.class);
-
+                .bodyToMono(ResponseDTO.class)
+                .doOnError(err -> {
+                    CommonUtils.deleteImageFile(carInfo.getFullPath());
+                });
 
         response.subscribe(result -> {
-            log.info(">>>> gpms filesize: {}", new File(carInfo.getFullPath()).length());
             CommonUtils.deleteImageFile(carInfo.getFullPath());
         });
     }
 
     // 출차 차량 정보 전송
-    @Retryable(backoff = @Backoff(delay = 0))
+//    @Retryable(backoff = @Backoff(delay = 0))
     public void requestExitCar(String key, CarInfo carInfo) {
         log.info(">>>> 출차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}", key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
         ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
@@ -94,9 +97,10 @@ public class GpmsAPI {
 
 
         response.subscribe(result -> {
-            if (200 <= result.getCode() && result.getCode() < 300) {
-                CommonUtils.deleteImageFile(carInfo.getFullPath());
-            }
+            CommonUtils.deleteImageFile(carInfo.getFullPath());
+//            if (200 <= result.getCode() && result.getCode() < 300) {
+//
+//            }
         });
     }
 
