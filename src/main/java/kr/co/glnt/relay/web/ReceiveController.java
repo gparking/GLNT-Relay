@@ -127,4 +127,10 @@ public class ReceiveController {
                 new ResponseDTO(Arrays.asList(client.getLrpStatus(facilityID)))
         );
     }
+
+    @GetMapping("/v1/format/display/{format}")
+    public ResponseEntity conventMessageFormat(@PathVariable("format") String format) {
+        displayService.setMessageFormat(format);
+        return ResponseEntity.ok().build();
+    }
 }

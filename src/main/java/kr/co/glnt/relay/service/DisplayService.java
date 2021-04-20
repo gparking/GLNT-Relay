@@ -18,13 +18,25 @@ public class DisplayService {
 
     // 아래 고정 메세지 포맷 "![000/P0001/Y0408/%s%s!]"
     // 아래 흐르는 메세지 포맷 "![000/P0001/S1000/Y0408/E0606/%s%s!]"
-    private final List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
+    private List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
     private Map<String, Timer> displayTimer;
 
     public DisplayService(ServerConfig serverConfig, GlntNettyClient client) {
         this.serverConfig = serverConfig;
         this.client = client;
         this.displayTimer = new HashMap<>();
+    }
+
+    public void setMessageFormat(String type) {
+        switch (type) {
+            case "fixed":
+                messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
+                break;
+            case "flow":
+                messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/S1000/Y0408/E0606/%s%s!]");
+                break;
+        }
+        log.info(">>>> {}로 메세지 타입 변경", type);
     }
 
     public void sendDisplayMessage(DisplayMessage message) {

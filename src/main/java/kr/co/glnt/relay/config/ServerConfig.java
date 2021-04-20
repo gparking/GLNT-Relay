@@ -52,7 +52,7 @@ public class ServerConfig {
 
     public List<FacilityInfo> findLprList() {
         return this.facilityList.stream()
-                .filter(info -> info.getCategory().equals("LPR"))
+                .filter(info -> info.getCategory().equals("LPR") && !info.getIp().equals("0.0.0.0"))
                 .collect(Collectors.toList());
     }
 

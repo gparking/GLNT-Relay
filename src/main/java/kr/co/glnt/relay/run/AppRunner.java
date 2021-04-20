@@ -116,6 +116,7 @@ public class AppRunner {
         List<FacilityInfo> facilityList = config.getFacilityList();
 
         // 1. data grouping (in gate / out gate)
+        // image path 가 존재하는 디렉터리들만 따로 추출.
         Map<String, FacilityInfo> lprGroup = facilityList.stream()
                 .filter(info -> Objects.nonNull(info.getImagePath()) && !info.getImagePath().isEmpty())
                 .collect(Collectors.toMap(i -> i.getImagePath(), j -> j));
