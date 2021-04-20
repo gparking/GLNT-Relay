@@ -1,5 +1,6 @@
 package kr.co.glnt.relay.watcher;
 
+import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.EventInfo;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.service.Breaker;
@@ -7,8 +8,10 @@ import kr.co.glnt.relay.service.BreakerFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 디렉토리 모니터링 클래스
@@ -19,19 +22,19 @@ public class GlntFolderWatcher implements Runnable {
     private Path watchFolder;
     private WatchService service;
     private FacilityInfo facilityInfo;
-
+    private Map<String, FacilityInfo> gateLprGroup;
 
     @SneakyThrows
-    public GlntFolderWatcher(FacilityInfo facilityInfoList) {
-        facilityInfo = facilityInfoList;
+    public GlntFolderWatcher(FacilityInfo facilityInfo, Map<String, FacilityInfo> gateLprGroup) {
+        this.facilityInfo = facilityInfo;
+        this.gateLprGroup = gateLprGroup;
         service = FileSystems.getDefault().newWatchService();
         watchFolder = Paths.get(facilityInfo.getImagePath());
-        if (!Files.exists(watchFolder)) {
+
+        if (!watchFolder.toFile().exists()) {
             Files.createDirectories(watchFolder);
         }
         watchFolder.register(service, StandardWatchEventKinds.ENTRY_CREATE);
-
-        log.info(">>> {} Monitoring Start", facilityInfo.getImagePath());
     }
 
     @SneakyThrows
@@ -42,25 +45,48 @@ public class GlntFolderWatcher implements Runnable {
             WatchKey key = null;
             key = service.take();
             List<WatchEvent<?>> events = key.pollEvents();
-            for (WatchEvent<?> event: events) {
+
+            for (WatchEvent<?> event : events) {
                 WatchEvent.Kind<?> kind = event.kind();
                 if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
                     continue;
                 }
 
                 String fullPath = getFullPath(event);
-
+                log.info(">>>> {}({}) 파일 생성: {}, size: {} bytes", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath);
                 switch (BreakerFactory.valueOf(facilityInfo.generateGateLprType())) {
-                    // 입차 전방일 경우 이벤트 발생 시간을 정확하게 체크하기 위해 멀티스레드로 동작.
-                    // 보조 LPR 이 달려있을 경우는 이렇게 진행해야 정확.
-                    // 우선 보조 LPR 이 입차 전방에만 있다고 가정하여 이렇게 해놨지만
-                    // 추후 어떻게 될지 모르니 설계면에서 다시 생각 해봐야 함.
+                    // 보조 LPR 이 달려있을 경우 동시에 사진이 들어와
+                    // 이벤트 발생 시간을 정확하게 체크하기 위해 신규 스레드 생성.
+                    case IN_OUTINFRONT:
+                        if (gateLprGroup.containsKey("IN_OUTINBACK")) {
+                            gateLprGroup.get("IN_OUTINBACK").setActive(true);
+                        }
                     case INFRONT:
                     case OUTFRONT:
-                        new Thread(() -> {
-                            breaker.startProcessing(new EventInfo(fullPath));
-                        }).start();
+                        new Thread(() ->
+                                breaker.startProcessing(new EventInfo(fullPath))
+                        ).start();
                         break;
+
+
+                    case IN_OUTINBACK:
+                        // 양방향 게이트일 경우 시설물 액티브 상태를 확인
+                        // 활성: 차량 입차
+                        // 비활성: 차량 출차
+                        // 출차 중일때 해당 이벤트 무시.
+                        if (!gateLprGroup.get("IN_OUTINBACK").isActive()) {
+                            CommonUtils.deleteImageFile(fullPath);
+                            break;
+                        }
+                        breaker.startProcessing(new EventInfo(fullPath));
+                        break;
+
+
+                    case IN_OUTOUTFRONT:
+                        // 같은 게이트 group 에
+                        if (gateLprGroup.containsKey("IN_OUTINBACK")) {
+                            gateLprGroup.get("IN_OUTINBACK").setActive(false);
+                        }
                     default:
                         breaker.startProcessing(new EventInfo(fullPath));
                         break;

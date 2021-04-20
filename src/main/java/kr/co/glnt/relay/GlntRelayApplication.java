@@ -15,10 +15,13 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableScheduling
 @SpringBootApplication
 public class GlntRelayApplication {
+
+//    private static ConfigurableApplicationContext context;
+
     public static void main(String[] args) {
         SpringApplication application = new SpringApplicationBuilder()
                 .sources(GlntRelayApplication.class)
-                .listeners(new ApplicationPidFileWriter("/glnt-app.pid"))
+                .listeners(new ApplicationPidFileWriter("/tmp/relay.pid"))
                 .build();
         application.run(args);
     }

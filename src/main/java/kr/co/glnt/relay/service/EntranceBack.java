@@ -1,5 +1,6 @@
 package kr.co.glnt.relay.service;
 
+import kr.co.glnt.relay.common.CommonUtils;
 import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.EventInfo;
 import kr.co.glnt.relay.dto.EventInfoGroup;
@@ -22,23 +23,28 @@ public class EntranceBack extends Breaker {
     /**
      * 후방 카메라는 하나만 있다고 가정하고 작업을 시작하지.
      *
-     * 0. 일단 다 보내는걸로
-
+     * 0. 일단 다 보내는걸로 key 는 empty
      * @param eventInfo
      */
     @Override
     public void startProcessing(EventInfo eventInfo) {
         try {
-            EventInfoGroup frontBackEventGroup = EventQueueManager.pollEntranceBackQueue();
-            if (Objects.isNull(frontBackEventGroup)) {
-                return;
-            }
-            List<CarInfo> carInfos = getCurrentGroupEventList(frontBackEventGroup);
+            CarInfo carInfo = generatedCarInfo(eventInfo);
+            if(carInfo.ocrValidate()) {
+                gpmsAPI.requestEntranceCar("후방", "", generatedCarInfo(eventInfo));
+            } else {
+                if (Objects.nonNull(carInfo)) {
+                    if (carInfo.getCode() == -1) {
+                        log.info("인식도중 에러: {}", carInfo.getNumber());
+                    }
+                }
 
-            gpmsAPI.requestEntranceCar(frontBackEventGroup.getKey(), carInfos.get(0));
-        }
-        catch (Exception e) {
-            log.error("입차 - 후방 에러", e.getMessage());
+                CommonUtils.deleteImageFile(carInfo.getFullPath());
+            }
+
+        } catch (Exception e) {
+            log.error("<!> 입차 - 후방 에러", e.getMessage());
+            CommonUtils.deleteImageFile(eventInfo.getFullPath());
         }
     }
 }

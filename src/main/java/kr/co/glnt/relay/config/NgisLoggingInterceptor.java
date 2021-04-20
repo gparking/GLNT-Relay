@@ -15,21 +15,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 @Slf4j
-public class RestTemplateLoggingInterceptor implements ClientHttpRequestInterceptor {
+public class NgisLoggingInterceptor implements ClientHttpRequestInterceptor {
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body,
                                         ClientHttpRequestExecution execution) throws IOException {
         HttpHeaders headers = request.getHeaders();
         headers.set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        headers.setBasicAuth("", "");
 
+        URI uri = request.getURI();
+        traceRequest(request, body);
         ClientHttpResponse response = execution.execute(request, body);
+        traceResponse(response, uri);
+
         return response;
     }
 
     private void traceRequest(HttpRequest request, byte[] body) {
         StringBuilder requestLog = new StringBuilder();
-        requestLog.append(">>> [REQUEST] ")
+        requestLog.append(">>>> [REQUEST] ")
                 .append("uri: ").append(request.getURI())
                 .append(", body: ").append(new String(body, StandardCharsets.UTF_8));
         log.info(requestLog.toString());
@@ -39,7 +42,7 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
         StringBuilder responseLog = new StringBuilder();
 
         if (Objects.nonNull(response)) {
-            responseLog.append(">>> [RESPONSE] ")
+            responseLog.append(">>>> [RESPONSE] ")
                     .append("uri: ").append(uri)
                     .append(", body: ").append(StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8));
         }

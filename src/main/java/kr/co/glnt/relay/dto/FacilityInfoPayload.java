@@ -9,6 +9,6 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 public class FacilityInfoPayload {
-    private final String gateSvrKey;
+    private final String relaySvrKey;
     private String featureId;
 }

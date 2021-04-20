@@ -2,6 +2,7 @@ package kr.co.glnt.relay.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,7 +10,6 @@ import java.util.UUID;
 public class EventInfoGroup {
     private String key;
     private final List<EventInfo> eventList;
-
 
     public EventInfoGroup(List<EventInfo> eventList) {
         this.eventList = eventList;
@@ -19,7 +19,7 @@ public class EventInfoGroup {
     private String generateUUID() {
         StringBuilder builder = new StringBuilder();
         return builder.append(UUID.randomUUID())
-                .append(System.currentTimeMillis())
+                .append(LocalDateTime.now())
                 .toString();
     }
 }
