@@ -14,6 +14,10 @@ server-config:
     close: "GATE DOWN"
     uplock: "GATE UPLOCK"
     unlock: "GATE UNLOCK"
+  display-format:
+    - ""
+    - "![000/P0000/Y0004/%s%s!]"
+    - "![000/P0001/S1000/Y0408/E0606/%s%s!]"
 
 management:
   endpoints:

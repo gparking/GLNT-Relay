@@ -61,6 +61,14 @@ public class GpmsAPI {
         return template.getForObject("/v1/relay/display/init/message", ResponseDTO.class);
     }
 
+    public ResponseDTO requestDisplayFormat() {
+        return webClient.get()
+                .uri("/v1/relay/display/info")
+                .retrieve()
+                .bodyToMono(ResponseDTO.class)
+                .block();
+    }
+
 
     // 입차 차량 정보 전송
     public void requestEntranceCar(String type, String key, CarInfo carInfo) {

@@ -52,6 +52,7 @@ public class AppRunner {
     public void init() {
         initFacilityInfos();
         initDisplayResetMessage();
+        initDisplayFormat();
         deviceConnect();
         lprRunner();
         startScheduler();
@@ -89,6 +90,17 @@ public class AppRunner {
 
         config.setResetMessage(displayResetMessages.get(0));
 
+    }
+
+    private void initDisplayFormat() {
+        ResponseDTO responseDTO = gpmsAPI.requestDisplayFormat();
+        HttpStatus status = HttpStatus.valueOf(responseDTO.getCode());
+        if (status != HttpStatus.OK) {
+            log.error("<!> 전광판 초기 포맷설정을 실패했습니다 / {}", responseDTO.getMsg());
+            return;
+        }
+        DisplayFormat displayFormat = mapper.convertValue(responseDTO.getData(), DisplayFormat.class);
+        config.changeMessageFormat(displayFormat);
     }
 
 

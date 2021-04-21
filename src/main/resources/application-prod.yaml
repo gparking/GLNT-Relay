@@ -18,6 +18,10 @@ server-config:
     uplock: "GATE UPLOCK"
     unlock: "GATE UNLOCK"
     health: "STATUS"
+  display-format:
+    - ""
+    - "![000/P0000/Y0004/%s%s!]"
+    - "![000/P0001/S1000/Y0408/E0606/%s%s!]"
 
 management:
   endpoints:

@@ -16,9 +16,7 @@ public class DisplayService {
     private final ServerConfig serverConfig;
     private final GlntNettyClient client;
 
-    // 아래 고정 메세지 포맷 "![000/P0001/Y0408/%s%s!]"
-    // 아래 흐르는 메세지 포맷 "![000/P0001/S1000/Y0408/E0606/%s%s!]"
-    private List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
+
     private Map<String, Timer> displayTimer;
 
     public DisplayService(ServerConfig serverConfig, GlntNettyClient client) {
@@ -27,17 +25,7 @@ public class DisplayService {
         this.displayTimer = new HashMap<>();
     }
 
-    public void setMessageFormat(String type) {
-        switch (type) {
-            case "fixed":
-                messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
-                break;
-            case "flow":
-                messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/S1000/Y0408/E0606/%s%s!]");
-                break;
-        }
-        log.info(">>>> {}로 메세지 타입 변경", type);
-    }
+
 
     public void sendDisplayMessage(DisplayMessage message) {
         // 시설물 정보 가져오기.
@@ -60,7 +48,11 @@ public class DisplayService {
         List<String> messageList = new ArrayList<>();
         for (int j = 0; j < messages.size(); j++) {
             DisplayMessage.DisplayMessageInfo info = messages.get(j);
-            String message = String.format(messageFormat.get(info.getLine()), info.getColor(), info.getText());
+
+            String format = serverConfig.getDisplayFormat().get(info.getLine());
+
+            String message = String.format(format, info.getColor(), info.getText());
+
             messageList.add(message);
         }
 
