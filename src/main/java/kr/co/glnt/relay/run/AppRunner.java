@@ -53,8 +53,8 @@ public class AppRunner {
         initFacilityInfos();
         initDisplayResetMessage();
         initDisplayFormat();
-        deviceConnect();
-        lprRunner();
+//        deviceConnect();
+//        lprRunner();
         startScheduler();
     }
 
@@ -99,6 +99,7 @@ public class AppRunner {
             log.error("<!> 전광판 초기 포맷설정을 실패했습니다 / {}", responseDTO.getMsg());
             return;
         }
+
         DisplayFormat displayFormat = mapper.convertValue(responseDTO.getData(), DisplayFormat.class);
         config.changeMessageFormat(displayFormat);
     }
