@@ -32,31 +32,13 @@ public class DisplayService {
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId("전광판", message.getDtFacilityId());
 
         // 메세지 추출
-        List<String> messageList = generateMessageList(message.getMessages());
+        List<String> messageList = serverConfig.generateMessageList(message.getMessages());
 
         // 메세지 보내기
         sendMessage(facilityInfo, messageList);
 
         // 리셋 타이머 설정하기.
         startDisplayResetTimer(facilityInfo);
-    }
-
-    // 전광판 메세지 리스트 생성하기.
-    public List<String> generateMessageList(List<DisplayMessage.DisplayMessageInfo> messages) {
-        Collections.sort(messages, (d1, d2) -> d1.getOrder() > d2.getOrder() ? 1 : -1);
-
-        List<String> messageList = new ArrayList<>();
-        for (int j = 0; j < messages.size(); j++) {
-            DisplayMessage.DisplayMessageInfo info = messages.get(j);
-
-            String format = serverConfig.getDisplayFormat().get(info.getLine());
-
-            String message = String.format(format, info.getColor(), info.getText());
-
-            messageList.add(message);
-        }
-
-        return messageList;
     }
 
     // 메세지 전송.
@@ -83,16 +65,11 @@ public class DisplayService {
         // 새로운 타이머 생성
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
-            List<DisplayMessage.DisplayMessageInfo> messages;
+            List<DisplayMessage.DisplayMessageInfo> messages = serverConfig.getDisplayResetMessage(facilityInfo);
             @Override
             public void run() {
-                if (facilityInfo.getFname().contains("입구")) {
-                    messages = serverConfig.getResetMessage().getIn();
-                } else {
-                    messages = serverConfig.getResetMessage().getOut();
-                }
 
-                sendMessage(facilityInfo, generateMessageList(messages));
+                sendMessage(facilityInfo, serverConfig.generateMessageList(messages));
                 displayTimer.remove(facilityInfo.getDtFacilitiesId());
             }
         }, 5 * 1000);
