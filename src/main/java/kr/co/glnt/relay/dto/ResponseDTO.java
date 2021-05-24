@@ -25,4 +25,9 @@ public class ResponseDTO {
         this.data = result;
     }
 
+    public ResponseDTO(Throwable err) {
+        this.code = 400;
+        this.msg = err.getMessage();
+    }
+
 }

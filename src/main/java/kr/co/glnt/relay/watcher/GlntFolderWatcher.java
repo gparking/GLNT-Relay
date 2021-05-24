@@ -8,7 +8,6 @@ import kr.co.glnt.relay.service.BreakerFactory;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +82,6 @@ public class GlntFolderWatcher implements Runnable {
 
 
                     case IN_OUTOUTFRONT:
-                        // 같은 게이트 group 에
                         if (gateLprGroup.containsKey("IN_OUTINBACK")) {
                             gateLprGroup.get("IN_OUTINBACK").setActive(false);
                         }

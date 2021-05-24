@@ -61,6 +61,18 @@ public class GpmsAPI {
         return template.getForObject("/v1/relay/display/init/message", ResponseDTO.class);
     }
 
+    public ResponseDTO requestDisplayFormat() {
+        return webClient.get()
+                .uri("/v1/relay/display/info")
+                .retrieve()
+                .bodyToMono(ResponseDTO.class)
+                .onErrorResume(err -> {
+                    log.info("<!> display format request err : {}", err.getMessage());
+                    return Mono.just(new ResponseDTO(err));
+                })
+                .block();
+    }
+
 
     // 입차 차량 정보 전송
     public void requestEntranceCar(String type, String key, CarInfo carInfo) {
@@ -98,9 +110,6 @@ public class GpmsAPI {
 
         response.subscribe(result -> {
             CommonUtils.deleteImageFile(carInfo.getFullPath());
-//            if (200 <= result.getCode() && result.getCode() < 300) {
-//
-//            }
         });
     }
 
@@ -111,7 +120,12 @@ public class GpmsAPI {
                 .uri("/v1/relay/health_check")
                 .bodyValue(facilityStatusList)
                 .retrieve()
-                .toBodilessEntity().subscribe();
+                .toBodilessEntity()
+                .onErrorResume(err -> {
+                    log.info("<!> device heal check request err : {}", err.getMessage());
+                    return Mono.empty();
+                })
+                .subscribe();
     }
 
     // 시설물 관련 알림
@@ -129,7 +143,12 @@ public class GpmsAPI {
                 .uri("/v1/relay/status_noti")
                 .bodyValue(object)
                 .retrieve()
-                .toBodilessEntity().subscribe();
+                .toBodilessEntity()
+                .onErrorResume(err -> {
+                    log.info("<!> device status notification err : {}", err.getMessage());
+                    return Mono.empty();
+                })
+                .subscribe();
     }
 
     // 정산 완료

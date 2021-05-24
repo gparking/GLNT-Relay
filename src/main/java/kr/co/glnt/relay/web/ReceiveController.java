@@ -54,6 +54,7 @@ public class ReceiveController {
 
 
 
+
     /**
      * 정산기 메세지 명령
      */
@@ -128,9 +129,11 @@ public class ReceiveController {
         );
     }
 
-    @GetMapping("/v1/format/display/{format}")
-    public ResponseEntity conventMessageFormat(@PathVariable("format") String format) {
-        displayService.setMessageFormat(format);
-        return ResponseEntity.ok().build();
+    // Change Display format
+    @PatchMapping("/v1/display/format")
+    public ResponseEntity conventMessageFormat(@RequestBody DisplayFormat displayFormat) {
+        serverConfig.changeMessageFormat(displayFormat);
+        log.info(">>>> {}로 메세지 타입 변경", displayFormat);
+        return ResponseEntity.ok(new ResponseDTO(displayFormat));
     }
 }
