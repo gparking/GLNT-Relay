@@ -4,10 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
-import kr.co.glnt.relay.config.ApplicationContextProvider;
 import kr.co.glnt.relay.config.ServerConfig;
+import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
 import kr.co.glnt.relay.dto.FacilityStatus;
@@ -16,7 +19,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -44,18 +50,41 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 Arrays.asList(FacilityStatus.reconnect(facilityInfo.getDtFacilitiesId()))
         ));
 
-        // 서버가 구동되고 첫 연결시에는 barStatus 가 null 이므로 여기서 함수 종료
-        if (Objects.isNull(facilityInfo.getBarStatus())) {
-            return;
+        // 전광판이 연결 성공시 리셋 메세지 전송.
+        if (facilityInfo.getCategory().equals("DISPLAY"))
+            displayActive(ctx, facilityInfo);
+
+
+        if (facilityInfo.getCategory().equals("BREAKER")) {
+            breakerActive(ctx);
         }
 
         // 재연결시 barStatus 가 lock 일 경우 다시 lock 상태로 변경.
-        if (facilityInfo.getBarStatus().equals("GATE UNLOCK OK")) {
-            char stx = 0x02, etx = 0x03;
-            String msg = String.format("%s%s%s", stx, "GATE UPLOCK", etx);
-            ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("ASCII"));
+//        if (facilityInfo.getBarStatus().equals("GATE UNLOCK OK")) {
+//            char stx = 0x02, etx = 0x03;
+//            String msg = String.format("%s%s%s", stx, "GATE UPLOCK", etx);
+//            ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("ASCII"));
+//            ctx.channel().writeAndFlush(byteBuf);
+//        }
+    }
+
+    public void displayActive(ChannelHandlerContext ctx, FacilityInfo info) {
+        List<DisplayMessage.DisplayMessageInfo> messages = config.getDisplayResetMessage(info);
+
+        config.generateMessageList(messages).forEach(msg -> {
+            ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("euc-kr"));
             ctx.channel().writeAndFlush(byteBuf);
-        }
+
+            log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
+        });
+
+    }
+
+    public void breakerActive(ChannelHandlerContext ctx) {
+        char stx = 0x02, etx = 0x03;
+        String msg = String.format("%s%s%s", stx, "STATUS", etx);
+        ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("ASCII"));
+        ctx.writeAndFlush(byteBuf);
     }
 
 
@@ -89,13 +118,19 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             return;
         }
 
+        // 전광판 헬스체크 메세지
+        if (message.startsWith("![0080")) {
+            return;
+        }
+
         log.info(">>>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), message);
+
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("TCP ERR => remoteAddress : {}", ctx.channel().remoteAddress(), cause);
+        log.error("<!> TCP ERR remoteAddress : {}, message: {}", ctx.channel().remoteAddress(), cause.getMessage());
     }
 
     // Netty ByteBuf convert to string
@@ -115,8 +150,6 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         String msg = MESSAGE.matcher(message).replaceAll("");
 
         log.info(">>>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), id, msg);
-
-        // TODO: 차단기 리셋시 리셋 전 상태값을 가져와 uplock 일경우 uplock 으로 변경해주기.
 
         if (facilityInfo.getFname().equals("출구")) {
             exitBreakerTask(facilityInfo, msg);
@@ -170,6 +203,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     facilityInfo.setPassCount(passCount);
                 }
             }
+
         }).start();
     }
 

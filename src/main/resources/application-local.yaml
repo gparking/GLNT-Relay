@@ -5,7 +5,7 @@ spring:
     throw-exception-if-no-handler-found: true
 
 server-config:
-  gpms-url: "http://192.168.20.6:13000"
+  gpms-url: "http://192.168.20.9:11000"
   ngis-url: "http://localhost:7777"
   server-key: "GATESVR1"
   check-time: 30
@@ -14,6 +14,10 @@ server-config:
     close: "GATE DOWN"
     uplock: "GATE UPLOCK"
     unlock: "GATE UNLOCK"
+  display-format:
+    - ""
+    - "![000/P0000/Y0004/%s%s!]"
+    - "![000/P0001/S1000/Y0408/E0606/%s%s!]"
 
 management:
   endpoints:

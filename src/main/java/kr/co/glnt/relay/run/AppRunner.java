@@ -52,6 +52,7 @@ public class AppRunner {
     public void init() {
         initFacilityInfos();
         initDisplayResetMessage();
+        initDisplayFormat();
         deviceConnect();
         lprRunner();
         startScheduler();
@@ -91,6 +92,19 @@ public class AppRunner {
 
     }
 
+    private void initDisplayFormat() {
+        ResponseDTO responseDTO = gpmsAPI.requestDisplayFormat();
+        HttpStatus status = HttpStatus.valueOf(responseDTO.getCode());
+        if (status != HttpStatus.OK) {
+            log.error("<!> 전광판 초기 포맷설정을 실패했습니다 / {}", responseDTO.getMsg());
+            return;
+        }
+
+        DisplayFormat displayFormat = mapper.convertValue(responseDTO.getData(), DisplayFormat.class);
+        config.changeMessageFormat(displayFormat);
+        log.info(">>>> display format: {}", displayFormat);
+    }
+
 
     // 디바이스 TCP 연결
     private void deviceConnect() {
@@ -98,11 +112,15 @@ public class AppRunner {
                 .filter(info -> info.getPort() > 0)
                 .collect(Collectors.toList());
 
-        client.setFeatureCount(facilityInfos.size());
+        // new
+        client.setConnectionList(facilityInfos);
+        client.connect();
 
-        facilityInfos.forEach(info -> {
-            client.connect(info.getIp(), info.getPort());
-        });
+        // old
+//        client.setFeatureCount(facilityInfos.size());
+//        facilityInfos.forEach(info -> {
+//            client.connect(info.getIp(), info.getPort());
+//        });
     }
 
     // 폴더 감지 시작.
