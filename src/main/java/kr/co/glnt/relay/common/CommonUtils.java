@@ -1,6 +1,5 @@
 package kr.co.glnt.relay.common;
 
-import kr.co.glnt.relay.dto.CarInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;

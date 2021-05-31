@@ -50,37 +50,6 @@ public class GlntIdleHandler extends ChannelDuplexHandler {
                     ctx.close();
                 }
             }
-//            else if (((IdleStateEvent) evt).state() == IdleState.WRITER_IDLE) {
-//
-//            }
-//                String writeHost = host.substring(1, host.length());
-//
-//                FacilityInfo info = config.findFacilityInfoByHost(writeHost);
-//
-//                String category = info.getCategory();
-//
-//                if (category.equals("BREAKER")) {
-//                    String command = config.getBreakerCommand().get("health");
-//                    char stx = 0x02, etx = 0x03;
-//                    String msg = String.format("%s%s%s", stx, command, etx);
-//
-//                    ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("ASCII"));
-//                    ctx.channel().writeAndFlush(byteBuf);
-//
-//                } else if (category.equals("DISPLAY")) {
-//                    List<DisplayMessage.DisplayMessageInfo> messages;
-//                    if (info.getFname().contains("입구")) {
-//                        messages = config.getResetMessage().getIn();
-//                    } else {
-//                        messages = config.getResetMessage().getOut();
-//                    }
-//
-//                    config.generateMessageList(messages).forEach(msg -> {
-//                        ByteBuf bytebuf = Unpooled.copiedBuffer(msg, Charset.forName("euc-kr"));
-//                        ctx.channel().writeAndFlush(bytebuf);
-//                    });
-//                }
-//            }
         }
     }
 }

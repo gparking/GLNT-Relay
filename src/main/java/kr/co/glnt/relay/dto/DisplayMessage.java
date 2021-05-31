@@ -13,6 +13,7 @@ import java.util.List;
 @Slf4j
 public class DisplayMessage {
     private String dtFacilityId;
+    private String reset;
     private List<DisplayMessageInfo> messages;
 
     @Data @NoArgsConstructor

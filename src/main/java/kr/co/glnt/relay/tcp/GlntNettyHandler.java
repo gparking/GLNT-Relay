@@ -151,8 +151,6 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         log.info(">>>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), id, msg);
 
-        // TODO: 차단기 리셋시 리셋 전 상태값을 가져와 uplock 일경우 uplock 으로 변경해주기.
-
         if (facilityInfo.getFname().equals("출구")) {
             exitBreakerTask(facilityInfo, msg);
         } else {

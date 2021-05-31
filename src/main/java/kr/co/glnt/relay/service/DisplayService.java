@@ -38,7 +38,8 @@ public class DisplayService {
         sendMessage(facilityInfo, messageList);
 
         // 리셋 타이머 설정하기.
-        startDisplayResetTimer(facilityInfo);
+        startDisplayResetTimer(facilityInfo, message.getReset());
+
     }
 
     // 메세지 전송.
@@ -51,17 +52,23 @@ public class DisplayService {
     }
 
     // 전광판 메세지 리셋 기능.
-    public void startDisplayResetTimer(FacilityInfo facilityInfo) {
+    public void startDisplayResetTimer(FacilityInfo facilityInfo, String reset) {
         if (displayTimer.containsKey(facilityInfo.getDtFacilitiesId())) {
             Timer timer = displayTimer.get(facilityInfo.getDtFacilitiesId());
             timer.cancel();
             timer = null;
         }
-        displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo));
+
+
+        long delay = "on".equals(reset)
+                ? 5 * 1000
+                : 10 * 1000;
+
+        displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo, delay));
     }
 
     // 전광판 리셋.
-    private Timer resetDisplayTimer(FacilityInfo facilityInfo) {
+    private Timer resetDisplayTimer(FacilityInfo facilityInfo, long delay) {
         // 새로운 타이머 생성
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -72,7 +79,7 @@ public class DisplayService {
                 sendMessage(facilityInfo, serverConfig.generateMessageList(messages));
                 displayTimer.remove(facilityInfo.getDtFacilitiesId());
             }
-        }, 5 * 1000);
+        }, delay);
 
         return timer;
     }
