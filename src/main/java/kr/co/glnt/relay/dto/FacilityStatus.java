@@ -47,7 +47,7 @@ public class FacilityStatus {
     public static FacilityStatus icCardReaderStatus(String facilitiesId, String healthStatus) {
         return FacilityStatus.builder()
                 .dtFacilitiesId(facilitiesId)
-                .status(healthStatus)
+                .status(healthStatus.toUpperCase())
                 .failureAlarm("icCardReaderFailure").build();
     }
 
@@ -57,7 +57,7 @@ public class FacilityStatus {
     public static FacilityStatus payStationStatus(String facilitiesId, String healthStatus) {
         return FacilityStatus.builder()
                 .dtFacilitiesId(facilitiesId)
-                .status(healthStatus)
+                .status(healthStatus.toUpperCase())
                 .failureAlarm("paymentFailure").build();
     }
 
