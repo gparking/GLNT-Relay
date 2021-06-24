@@ -25,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
-import javax.xml.ws.Response;
+//import javax.xml.ws.Response;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Objects;
