@@ -82,6 +82,12 @@ public class GpmsAPI {
 
         log.info(">>>> gpms filesize: {}", new File(carInfo.getFullPath()).length());
 
+//        try {
+//            template.postForObject("/v1/inout/parkin", payload, ResponseDTO.class);
+//            CommonUtils.deleteImageFile(carInfo.getFullPath());
+//        } catch (Exception e) {
+//            CommonUtils.deleteImageFile(carInfo.getFullPath());
+//        }
         Mono<ResponseDTO> response = webClient.post()
                 .uri("/v1/inout/parkin")
                 .bodyValue(payload)
@@ -101,11 +107,23 @@ public class GpmsAPI {
     public void requestExitCar(String key, CarInfo carInfo) {
         log.info(">>>> 출차요청 - key: {}, dtFacilitiesid: {}, number: {}, path: {}", key, carInfo.getDtFacilitiesId(), carInfo.getNumber(), carInfo.getFullPath());
         ParkInOutPayload payload = new ParkInOutPayload(key, carInfo);
+//        try {
+//            template.postForObject("/v1/inout/parkout", payload, ResponseDTO.class);
+//            CommonUtils.deleteImageFile(carInfo.getFullPath());
+//
+//        } catch (Exception e) {
+//            CommonUtils.deleteImageFile(carInfo.getFullPath());
+//        }
+//
         Mono<ResponseDTO> response = webClient.post()
                 .uri("/v1/inout/parkout")
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToMono(ResponseDTO.class);
+                .bodyToMono(ResponseDTO.class)
+                .doOnError(err -> {
+                    log.error("<!> request parkout", err);
+                    CommonUtils.deleteImageFile(carInfo.getFullPath());
+                });
 
 
         response.subscribe(result -> {
@@ -116,6 +134,7 @@ public class GpmsAPI {
 
     // 장비 헬스체크
     public void sendFacilityHealth(FacilityPayloadWrapper facilityStatusList) {
+//        template.postForObject("/v1/relay/health_check", facilityStatusList, ResponseDTO.class);
         webClient.post()
                 .uri("/v1/relay/health_check")
                 .bodyValue(facilityStatusList)
@@ -130,6 +149,7 @@ public class GpmsAPI {
 
     // 시설물 관련 알림
     public void sendFacilityAlarm(FacilityPayloadWrapper facilityPayloadWrapper) {
+//        template.postForObject("/v1/relay/failure_alarm", facilityPayloadWrapper, ResponseDTO.class);
         webClient.post()
                 .uri("/v1/relay/failure_alarm")
                 .bodyValue(facilityPayloadWrapper)
@@ -139,6 +159,7 @@ public class GpmsAPI {
 
     // 장비 상태 정보
     public void sendStatusNoti(FacilityPayloadWrapper object) {
+//        template.postForObject("/v1/relay/status_noti", object, ResponseDTO.class);
         webClient.post()
                 .uri("/v1/relay/status_noti")
                 .bodyValue(object)
@@ -153,6 +174,7 @@ public class GpmsAPI {
 
     // 정산 완료
     public void sendPaymentResponse(String id, String data) {
+//        template.postForObject("/v1/relay/paystation/result/"+id, data, ResponseDTO.class);
         webClient.post()
                 .uri("/v1/relay/paystation/result/{id}", id)
                 .bodyValue(data)
@@ -162,6 +184,7 @@ public class GpmsAPI {
 
     // 출차시 미인식 차량 번호 조회
     public void searchVehicle(String id, String data) {
+//        template.postForObject("/v1/relay/paystation/search/vehicle/"+id, data, ResponseDTO.class);
         webClient.post()
                 .uri("/v1/relay/paystation/search/vehicle/{id}", id)
                 .bodyValue(data)
@@ -171,6 +194,7 @@ public class GpmsAPI {
 
     // 차량 번호 선택 후 정산 요청
     public void sendPayment(String id, String data) {
+//        template.postForObject("/v1/relay/paystation/request/adjustment/"+id, data, ResponseDTO.class);
         webClient.post()
                 .uri("/v1/relay/paystation/request/adjustment/{id}", id)
                 .bodyValue(data)
