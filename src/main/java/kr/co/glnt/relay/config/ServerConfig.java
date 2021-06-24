@@ -83,7 +83,6 @@ public class ServerConfig {
         }
     }
 
-
     public List<String> generateMessageList(List<DisplayMessage.DisplayMessageInfo> messages) {
         Collections.sort(messages, (d1, d2) -> d1.getOrder() > d2.getOrder() ? 1 : -1);
 
@@ -108,5 +107,4 @@ public class ServerConfig {
             return resetMessage.getOut();
         }
     }
-
 }

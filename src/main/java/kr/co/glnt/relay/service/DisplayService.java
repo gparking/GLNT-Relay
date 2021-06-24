@@ -40,6 +40,18 @@ public class DisplayService {
         // 리셋 타이머 설정하기.
         startDisplayResetTimer(facilityInfo, message.getReset());
 
+        List<String> messageList = new ArrayList<>();
+        for (int j = 0; j < messages.size(); j++) {
+            DisplayMessage.DisplayMessageInfo info = messages.get(j);
+
+            String format = serverConfig.getDisplayFormat().get(info.getLine());
+
+            String message = String.format(format, info.getColor(), info.getText());
+
+            messageList.add(message);
+        }
+
+        return messageList;
     }
 
     // 메세지 전송.

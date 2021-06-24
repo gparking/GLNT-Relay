@@ -62,7 +62,6 @@ public class GpmsAPI {
     }
 
     public ResponseDTO requestDisplayFormat() {
-//        return template.getForObject("/v1/relay/display/info", ResponseDTO.class);
         return webClient.get()
                 .uri("/v1/relay/display/info")
                 .retrieve()
