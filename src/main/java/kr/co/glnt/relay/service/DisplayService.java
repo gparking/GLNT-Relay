@@ -40,7 +40,7 @@ public class DisplayService {
         // 메세지 보내기
         sendMessage(facilityInfo, messageList);
         // 리셋 타이머 설정하기.
-        startDisplayResetTimer(facilityInfo);
+        startDisplayResetTimer(facilityInfo, message.getReset().equals("off"));
     }
     // 전광판 메세지 리스트 생성하기.
     public List<String> generateMessageList(List<DisplayMessage.DisplayMessageInfo> messages) {
@@ -62,16 +62,18 @@ public class DisplayService {
         );
     }
     // 전광판 메세지 리셋 기능.
-    public void startDisplayResetTimer(FacilityInfo facilityInfo) {
+    public void startDisplayResetTimer(FacilityInfo facilityInfo, Boolean reset) {
         if (displayTimer.containsKey(facilityInfo.getDtFacilitiesId())) {
             Timer timer = displayTimer.get(facilityInfo.getDtFacilitiesId());
             timer.cancel();
             timer = null;
         }
-        displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo));
+        displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo, reset));
     }
     // 전광판 리셋.
-    private Timer resetDisplayTimer(FacilityInfo facilityInfo) {
+    private Timer resetDisplayTimer(FacilityInfo facilityInfo, Boolean reset) {
+        //rest timer 설정
+        Integer delay = reset? 10000 : 5;
         // 새로운 타이머 생성
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -86,7 +88,7 @@ public class DisplayService {
                 sendMessage(facilityInfo, generateMessageList(messages));
                 displayTimer.remove(facilityInfo.getDtFacilitiesId());
             }
-        }, 5 * 1000);
+        }, delay * 1000);
         return timer;
     }
 }

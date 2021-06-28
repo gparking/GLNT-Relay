@@ -14,9 +14,11 @@ import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
 import kr.co.glnt.relay.dto.FacilityStatus;
+import kr.co.glnt.relay.service.DisplayService;
 import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -33,6 +35,9 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private final ServerConfig config;
     private final ObjectMapper objectMapper;
     private final GpmsAPI gpmsAPI;
+
+    @Autowired
+    private DisplayService displayService;
 
     public GlntNettyHandler(ObjectMapper objectMapper, ServerConfig config, GpmsAPI gpmsAPI) {
         this.config = config;
@@ -151,7 +156,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         log.info(">>>> {}({}) 메세지 수신: {}", facilityInfo.getFname(), id, msg);
 
-        if (facilityInfo.getFname().equals("출구")) {
+        if (facilityInfo.getGateType().contains("OUT")) {
             exitBreakerTask(facilityInfo, msg);
         } else {
             // DetectOut 을 밟았을 경우
@@ -182,6 +187,8 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             // 정상적으로 게이트가 올라갔을 경우 시설물 고장이 아님
             if (msg.contains("GATE UP OK")) {
                 facilityInfo.setPassCount(0);
+                // Todo 출차 전광판 reset 기능 적용
+                displayService.startDisplayResetTimer(config.findFacilityInfoByCategory(facilityInfo, "DISPLAY"), false);
                 return;
             }
 
