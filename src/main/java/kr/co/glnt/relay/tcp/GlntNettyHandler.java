@@ -9,6 +9,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
+import kr.co.glnt.relay.common.BreakerActionTarget;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
@@ -35,6 +36,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private final ServerConfig config;
     private final ObjectMapper objectMapper;
     private final GpmsAPI gpmsAPI;
+    private BreakerActionTarget breakerActionTarget = BreakerActionTarget.NORMAL;
 
     @Autowired
     private DisplayService displayService;
@@ -175,11 +177,45 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         // 액션이 완료 되었을때 gpms 로 상태정보 전송.
         if (msg.contains("OK")) {
-            sendBreakerStatus(facilityInfo, msg);
+            statusBreaker(msg,facilityInfo);
         }
 
         facilityInfo.setBarStatus(msg);
+
+
     }
+
+
+    private void statusBreaker(String msg, FacilityInfo facilityInfo) {
+
+        // 프로그램에서 접근하는것
+        if(breakerActionTarget == BreakerActionTarget.NORMAL) {
+            sendBreakerStatus(facilityInfo, msg);
+        }
+
+        // 수동 스위치에서 UPLOCK
+        if(msg.contains("EXUPLOCK")) {
+            breakerActionTarget = BreakerActionTarget.EX;
+            sendBreakerStatus(facilityInfo, msg);
+        }
+
+        // 스위치 UPLOCK
+        if(msg.contains("SWUPLOCKOKGATE")) {
+            breakerActionTarget = BreakerActionTarget.SW;
+            sendBreakerStatus(facilityInfo, msg);
+        }
+
+        // UNLOCK 요청일때
+        if (msg.contains("UNLOCK")) {
+            breakerActionTarget = BreakerActionTarget.NORMAL;
+            sendBreakerStatus(facilityInfo, msg);
+        }
+
+
+    }
+
+
+
 
     // 출차 차단기 작업.
     private void exitBreakerTask(FacilityInfo facilityInfo, String msg) {
@@ -226,7 +262,12 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             sendMsg = "DOWN";
         } else if (msg.contains("SCAN OK")) {
             sendMsg = "SCAN";
+        } else if (msg.contains("UPLOCKOK")){
+            sendMsg = "XUPLOCK";
+        } else if (msg.contains("UNLOCKOK")){
+            sendMsg = "UNLOCK";
         }
+
 
         if (!sendMsg.isEmpty()) {
             List<FacilityStatus> status = Arrays.asList(
