@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.annotation.Async;
@@ -40,21 +41,25 @@ public class AppRunner {
     private NgisAPI ngisAPI;
     private ObjectMapper mapper;
 
-    public AppRunner(GlntNettyClient client, ServerConfig config, GpmsAPI gpmsAPI, NgisAPI ngisAPI, ObjectMapper mapper) {
+    private ConfigurableEnvironment env;
+
+    public AppRunner(GlntNettyClient client, ServerConfig config, GpmsAPI gpmsAPI, NgisAPI ngisAPI, ObjectMapper mapper, ConfigurableEnvironment env) {
         this.client = client;
         this.config = config;
         this.gpmsAPI = gpmsAPI;
         this.ngisAPI = ngisAPI;
         this.mapper = mapper;
+        this.env = env;
     }
 
     @PostConstruct
     public void init() {
+        String[] profiles = env.getActiveProfiles();
         initFacilityInfos();
         initDisplayResetMessage();
         initDisplayFormat();
         deviceConnect();
-        lprRunner();
+        if (!profiles[0].equals("local")) lprRunner();
         startScheduler();
     }
 

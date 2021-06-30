@@ -188,7 +188,7 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
             if (msg.contains("GATE UP OK")) {
                 facilityInfo.setPassCount(0);
                 // Todo 출차 전광판 reset 기능 적용
-                displayService.startDisplayResetTimer(config.findFacilityInfoByCategory(facilityInfo, "DISPLAY"), false);
+                displayService.startDisplayResetTimer(config.findFacilityInfoByCategory(facilityInfo, "DISPLAY"), "on");
                 return;
             }
 
