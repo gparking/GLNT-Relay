@@ -35,6 +35,7 @@ public class ServerConfig {
     private List<String> displayFormat; // = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/S1000/Y0408/E0606/%s%s!]");
 
 
+
     public FacilityInfo findByFacilitiesId(String type, String dtFacilitiesId) {
         return facilityList
                 .stream()
@@ -69,6 +70,13 @@ public class ServerConfig {
                 .collect(Collectors.toList());
     }
 
+    public FacilityInfo findFacilityInfo(FacilityInfo facilityInfo, String category) {
+        return this.facilityList.stream()
+                .filter(info -> info.getGateId().equals(facilityInfo.getGateId()) && info.getCategory().equals(category))
+                .findFirst()
+                .orElseThrow(() -> new GlntBadRequestException("<!> 일치하는 시설 정보가 없습니다."));
+    }
+
     public void changeMessageFormat(DisplayFormat displayFormat) {
         if (displayFormat.getLine1().equals("FIX")) {
             this.displayFormat.set(1, "![000/P0000/Y0004/%s%s!]");
@@ -101,10 +109,14 @@ public class ServerConfig {
     }
 
     public List<DisplayMessage.DisplayMessageInfo> getDisplayResetMessage(FacilityInfo facilityInfo) {
-        if (facilityInfo.getFname().contains("입구")) {
+        if (facilityInfo.getGateType().contains("IN")) {
             return resetMessage.getIn();
         } else {
             return resetMessage.getOut();
         }
+    }
+
+    public FacilityInfo findFacilityInfoByCategory(FacilityInfo facilityInfo, String category) {
+        return findFacilityInfo(facilityInfo, category);
     }
 }

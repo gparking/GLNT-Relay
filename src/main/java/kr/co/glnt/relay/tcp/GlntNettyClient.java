@@ -9,6 +9,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import kr.co.glnt.relay.common.BreakerActionTarget;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityStatus;
@@ -34,6 +35,7 @@ public class GlntNettyClient {
     private final GpmsAPI gpmsAPI;
     private Bootstrap bootstrap;
     private List<FacilityInfo> connectionList;
+
 
 
     public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig, GpmsAPI gpmsAPI) {
