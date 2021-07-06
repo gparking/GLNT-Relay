@@ -1,4 +1,5 @@
 package kr.co.glnt.relay.service;
+import kr.co.glnt.relay.common.CmdStatus;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
@@ -42,6 +43,9 @@ public class DisplayService {
         // 시설물 정보 가져오기.
         FacilityInfo facilityInfo = serverConfig.findByFacilitiesId("전광판", message.getDtFacilityId());
 
+
+        facilityInfo.setFacilityMessage(message.getMessages());
+
         // 메세지 추출
         List<String> messageList = serverConfig.generateMessageList(message.getMessages());
 
@@ -64,13 +68,13 @@ public class DisplayService {
 //        return messageList;
 //    }
 // 메세지 전송.
-public void sendMessage(FacilityInfo facilityInfo, List<String> messageList) {
-    messageList.forEach(msg -> {
-                log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
-                client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"));
-            }
-    );
-}
+    public void sendMessage(FacilityInfo facilityInfo, List<String> messageList) {
+        messageList.forEach(msg -> {
+                    log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
+                    client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"));
+                }
+        );
+    }
 
     // 전광판 메세지 리셋 기능.
     public void startDisplayResetTimer(FacilityInfo facilityInfo, String reset) {
@@ -80,9 +84,20 @@ public void sendMessage(FacilityInfo facilityInfo, List<String> messageList) {
             timer = null;
         }
 
-        long delay = "on".equals(reset)
-                ? 5 * 1000
-                : 100 * 1000;
+        long delay = 0;
+
+        switch (reset){
+            case "on":
+                delay = 5 * 1000;
+                break;
+            case "off":
+                facilityInfo.setCmdStatus(CmdStatus.EXIT_STANDBY);
+                delay = 120 * 1000;
+                break;
+            default:
+                break;
+        }
+
 
         displayTimer.put(facilityInfo.getDtFacilitiesId(), resetDisplayTimer(facilityInfo, delay));
     }
@@ -98,6 +113,7 @@ public void sendMessage(FacilityInfo facilityInfo, List<String> messageList) {
 
                 sendMessage(facilityInfo, serverConfig.generateMessageList(messages));
                 displayTimer.remove(facilityInfo.getDtFacilitiesId());
+                facilityInfo.setCmdStatus(CmdStatus.NORMAL);
             }
         }, delay);
 

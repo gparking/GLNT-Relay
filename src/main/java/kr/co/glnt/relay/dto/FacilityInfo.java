@@ -1,5 +1,6 @@
 package kr.co.glnt.relay.dto;
 
+import kr.co.glnt.relay.common.CmdStatus;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 @Data
 @Slf4j
 public class FacilityInfo {
+    private CmdStatus cmdStatus = CmdStatus.NORMAL;
+    private List<DisplayMessage.DisplayMessageInfo> facilityMessage;
     private int sn;
     private String category;
     private String modelid;

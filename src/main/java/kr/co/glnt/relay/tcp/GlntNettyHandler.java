@@ -10,23 +10,20 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.CharsetUtil;
 import kr.co.glnt.relay.common.BreakerActionTarget;
+import kr.co.glnt.relay.common.CmdStatus;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
 import kr.co.glnt.relay.dto.FacilityStatus;
-import kr.co.glnt.relay.service.DisplayService;
 import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -38,8 +35,8 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     private final GpmsAPI gpmsAPI;
     private BreakerActionTarget breakerActionTarget = BreakerActionTarget.NORMAL;
 
-    @Autowired
-    private DisplayService displayService;
+
+
 
     public GlntNettyHandler(ObjectMapper objectMapper, ServerConfig config, GpmsAPI gpmsAPI) {
         this.config = config;
@@ -76,7 +73,16 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     public void displayActive(ChannelHandlerContext ctx, FacilityInfo info) {
-        List<DisplayMessage.DisplayMessageInfo> messages = config.getDisplayResetMessage(info);
+
+        List<DisplayMessage.DisplayMessageInfo> messages = null;
+
+
+        if(CmdStatus.getCmdStatus(info) == CmdStatus.EXIT_STANDBY){
+            messages = info.getFacilityMessage();
+        }
+        else if(CmdStatus.getCmdStatus(info) == CmdStatus.NORMAL){
+             messages = config.getDisplayResetMessage(info);
+        }
 
         config.generateMessageList(messages).forEach(msg -> {
             ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("euc-kr"));
@@ -114,13 +120,13 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
         String message = byteBufToString(msg);
 
         // 차단기 응답 메세지
-        if (facilityInfo.getFname().contains("차단기")) {
+        if (facilityInfo.getCategory().equals("BREAKER")) {
             receiveBreakerMessage(ctx.channel(), facilityInfo, message);
             return;
         }
 
         // 정산기 응답 메세지
-        if (facilityInfo.getFname().contains("정산기")) {
+        if (facilityInfo.getCategory().equals("PAYSTATION")) {
             receivePayStationMessage(facilityInfo, message);
             return;
         }
@@ -215,21 +221,59 @@ public class GlntNettyHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
 
+    private void exitResetMessage(FacilityInfo facilityInfo, Charset charset){
+
+        facilityInfo.setPassCount(0);
+
+        List<FacilityInfo> facilityList = config.getFacilityList();
+
+        FacilityInfo display = facilityList
+                .stream()
+                .filter(facility -> facility.getGateId().equals(facilityInfo.getGateId()))
+                .filter(facilityGateId -> facilityGateId.getCategory().equals("DISPLAY"))
+                .findFirst().get();
+
+        List<DisplayMessage.DisplayMessageInfo> displayResetMessage = config.getDisplayResetMessage(facilityInfo);
+        List<String> messageList = config.generateMessageList(displayResetMessage);
+
+        messageList.forEach(message -> {
+            sendMessage(display.generateHost(),message,charset);
+        });
+
+        display.setCmdStatus(CmdStatus.NORMAL);
+
+    }
+
+    private void sendMessage(String host, String message,Charset charset){
+
+        Map<String, Channel> channelMap = GlntNettyClient.getChannelMap();
+
+        if (!channelMap.containsKey(host)) {
+            log.info("<!> channel is not found {}", host);
+            return;
+        }
+
+        ByteBuf byteBuf = Unpooled.copiedBuffer(message, charset);
+        Channel channel = channelMap.get(host);
+        channel.writeAndFlush(byteBuf);
+    }
+
+
+
 
 
     // 출차 차단기 작업.
     private void exitBreakerTask(FacilityInfo facilityInfo, String msg) {
         new Thread(() -> {
             // 정상적으로 게이트가 올라갔을 경우 시설물 고장이 아님
-            if (msg.contains("GATE UP OK")) {
-                facilityInfo.setPassCount(0);
-                // Todo 출차 전광판 reset 기능 적용
-                displayService.startDisplayResetTimer(config.findFacilityInfoByCategory(facilityInfo, "DISPLAY"), "on");
+            if (msg.contains("GATE UP OK") || !(facilityInfo.getBarStatus().contains("GATE DOWN"))) {
+                exitResetMessage(facilityInfo,Charset.forName("euc-kr"));
                 return;
             }
 
             //  출차 디텍트를 밟았을때 (DET OUT GATE DOWN ACTION)
             if (msg.contains("DET OUT")) {
+                exitResetMessage(facilityInfo,Charset.forName("euc-kr"));
                 String barStatus = facilityInfo.getBarStatus();
                 // 게이트 게이트 상태가 내려가져있는 상황일때.
                 // 4대 이상 차량이 출차될 경우 알람 발생
