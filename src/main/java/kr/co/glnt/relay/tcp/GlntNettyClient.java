@@ -12,6 +12,9 @@ import io.netty.handler.timeout.IdleStateHandler;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.FacilityInfo;
 import kr.co.glnt.relay.dto.FacilityStatus;
+import kr.co.glnt.relay.service.BreakerService;
+import kr.co.glnt.relay.service.DisplayService;
+import kr.co.glnt.relay.service.PaymentService;
 import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
@@ -34,17 +37,20 @@ public class GlntNettyClient {
     private final GpmsAPI gpmsAPI;
     private Bootstrap bootstrap;
     private List<FacilityInfo> connectionList;
+    private final DisplayService displayService;
+    private final BreakerService breakerService;
+    private final PaymentService paymentService;
 
 
 
 
-
-
-
-    public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig, GpmsAPI gpmsAPI) {
+    public GlntNettyClient(ObjectMapper objectMapper, ServerConfig serverConfig, GpmsAPI gpmsAPI, DisplayService displayService, BreakerService breakerService, PaymentService paymentService) {
         this.objectMapper = objectMapper;
         this.config = serverConfig;
         this.gpmsAPI = gpmsAPI;
+        this.displayService = displayService;
+        this.breakerService = breakerService;
+        this.paymentService = paymentService;
     }
 
     public void setConnectionList(List<FacilityInfo> list) {
@@ -86,7 +92,7 @@ public class GlntNettyClient {
                     ChannelPipeline pipeline = socketChannel.pipeline();
                     pipeline.addLast("idleStateHandler", new IdleStateHandler(15, 0, 0));
                     pipeline.addLast("glntIdleHandler", new GlntIdleHandler(config));
-                    pipeline.addLast(new GlntNettyHandler(objectMapper,config,gpmsAPI));
+                    pipeline.addLast(new GlntNettyHandler(objectMapper,config,gpmsAPI,displayService, breakerService, paymentService));
                 }
             }).connect(ip, port).sync();
 
@@ -139,7 +145,7 @@ public class GlntNettyClient {
     }
 
     // 시설물에 메세지 전송. (차단기, 전광판, 정산기)
-    public void sendMessage(String host, String msg, Charset charset) {
+    public static void sendMessage(String host, String msg, Charset charset) {
         if (!channelMap.containsKey(host)) {
             log.info("<!> channel is not found {}", host);
             return;

@@ -1,9 +1,16 @@
 package kr.co.glnt.relay.service;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import kr.co.glnt.relay.common.CmdStatus;
 import kr.co.glnt.relay.config.ServerConfig;
 import kr.co.glnt.relay.dto.DisplayMessage;
 import kr.co.glnt.relay.dto.FacilityInfo;
+import kr.co.glnt.relay.dto.FacilityPayloadWrapper;
+import kr.co.glnt.relay.dto.FacilityStatus;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
+import kr.co.glnt.relay.web.GpmsAPI;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.nio.charset.Charset;
@@ -12,14 +19,15 @@ import java.util.*;
 @Service
 public class DisplayService {
     private final ServerConfig serverConfig;
-    private final GlntNettyClient client;
     // 아래 고정 메세지 포맷 "![000/P0001/Y0408/%s%s!]"
     // 아래 흐르는 메세지 포맷 "![000/P0001/S1000/Y0408/E0606/%s%s!]"
     private List<String> messageFormat = Arrays.asList("", "![000/P0000/Y0004/%s%s!]", "![000/P0001/Y0408/%s%s!]");
     private Map<String, Timer> displayTimer;
-    public DisplayService(ServerConfig serverConfig, GlntNettyClient client) {
+    private int timerTime;
+    private GlntNettyClient client;
+
+    public DisplayService(ServerConfig serverConfig) {
         this.serverConfig = serverConfig;
-        this.client = client;
         this.displayTimer = new HashMap<>();
     }
 
@@ -69,11 +77,17 @@ public class DisplayService {
 //    }
 // 메세지 전송.
     public void sendMessage(FacilityInfo facilityInfo, List<String> messageList) {
+
+        Map<String, Channel> channelMap = GlntNettyClient.getChannelMap();
+
         messageList.forEach(msg -> {
-                    log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
-                    client.sendMessage(facilityInfo.generateHost(), msg, Charset.forName("euc-kr"));
-                }
-        );
+            log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
+
+            String host = facilityInfo.generateHost();
+
+            GlntNettyClient.sendMessage(host,msg,Charset.forName("euc-kr"));
+
+        });
     }
 
     // 전광판 메세지 리셋 기능.
@@ -119,4 +133,79 @@ public class DisplayService {
 
         return timer;
     }
+
+
+    public void displayActive(ChannelHandlerContext ctx, FacilityInfo info){
+
+        List<DisplayMessage.DisplayMessageInfo> messages = null;
+
+        if(CmdStatus.getCmdStatus(info) == CmdStatus.EXIT_STANDBY){
+            messages = info.getFacilityMessage();
+        }
+        else if(CmdStatus.getCmdStatus(info) == CmdStatus.NORMAL){
+            messages = serverConfig.getDisplayResetMessage(info);
+        }
+
+        Timer timer = new Timer();
+
+        List<DisplayMessage.DisplayMessageInfo> finalMessage = messages;
+
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if(info.getCmdStatus().equals(CmdStatus.EXIT_STANDBY)){
+                    if(!(info.getFacilityMessage().get(0).getText().equals(finalMessage.get(0).getText()))
+                            && info.getFacilityMessage().get(1).getText().equals(finalMessage.get(1).getText())){
+
+                        log.info("<!> reconnect message Error");
+
+                        List<DisplayMessage.DisplayMessageInfo> messageInfos =  serverConfig.getDisplayResetMessage(info);
+
+                        serverConfig.generateMessageList(messageInfos).forEach(msg ->  {
+                            ByteBuf byteBuf = Unpooled.copiedBuffer(msg,Charset.forName("euc-kr"));
+                            ctx.channel().writeAndFlush(byteBuf);
+                        });
+                    }
+                }
+            }
+        },timerTime);
+
+        serverConfig.generateMessageList(messages).forEach(msg -> {
+            ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("euc-kr"));
+            ctx.channel().writeAndFlush(byteBuf);
+
+            log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
+        });
+    }
+
+    public void exitResetMessage(FacilityInfo facilityInfo){
+
+        facilityInfo.setPassCount(0);
+
+        List<FacilityInfo> facilityList = serverConfig.getFacilityList();
+
+        FacilityInfo display = facilityList
+                .stream()
+                .filter(facility -> facility.getGateId().equals(facilityInfo.getGateId()))
+                .filter(facilityGateId -> facilityGateId.getCategory().equals("DISPLAY"))
+                .findFirst().get();
+
+
+        List<DisplayMessage.DisplayMessageInfo> displayResetMessage = serverConfig.getDisplayResetMessage(facilityInfo);
+        List<String> messageList = serverConfig.generateMessageList(displayResetMessage);
+
+
+        sendMessage(display,messageList);
+
+        display.setCmdStatus(CmdStatus.NORMAL);
+    }
+
+
+
+
+
+
+
+
+
 }
