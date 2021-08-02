@@ -62,7 +62,11 @@ public class PaymentService{
                                 FacilityStatus.icCardReaderStatus(facilityInfo.getDtFacilitiesId(), cardReaderStatus)
                         )
                 ));
-
+                break;
+            case "adjustmentdataRequest":
+                log.info(">>>> 정산기({}) 바코드 할인 메세지 응답 수신: {}", facilityInfo.getDtFacilitiesId(), message);
+                //String requestData = objectMapper.writeValueAsString(receiveData);
+                gpmsAPI.sendAdjustmentDataRequest(facilityInfo.getDtFacilitiesId(),message);
                 break;
 
             case "paymentFailure":
