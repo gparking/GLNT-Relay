@@ -32,7 +32,6 @@ public class Entrance extends Breaker {
     public void startProcessing(EventInfo eventInfo) {
         try {
             long currentTime = eventInfo.getCreatedTime();
-
             CarInfo carInfo = generatedCarInfo(eventInfo);
             eventInfo.setCarInfo(carInfo);
 

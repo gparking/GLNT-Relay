@@ -8,6 +8,7 @@ spring:
     throw-exception-if-no-handler-found: true
 
 server-config:
+  lpr-on: "ON"
   gpms-url: "http://127.0.0.1:11000"
   ngis-url: "http://127.0.0.1:7777"
   server-key: "GATESVR1"
