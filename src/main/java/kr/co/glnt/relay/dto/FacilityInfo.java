@@ -45,6 +45,7 @@ public class FacilityInfo {
                                                                     // 위해 open 메세지는 모아놨다가 닫힐때 연다.
     private Timer timer = new Timer();  // openMessageQueue 리셋용 타이머
                                         // 전광판 리셋으로도 사용.
+    private int counterResetTime; // 오픈메세지 리셋 딜레이 설정
 
     public void setBarStatus(String barStatus) {
         this.barStatus = barStatus;
@@ -67,7 +68,7 @@ public class FacilityInfo {
         messageResetTimerStart();
     }
 
-    private void messageResetTimerStart() {
+/*    private void messageResetTimerStart() {
         timer.cancel();
         timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -77,5 +78,17 @@ public class FacilityInfo {
                 log.info(">>>> {} 오픈 메세지 큐 초기화", fname);
             }
         }, (60 * 1000) * 5);
+    }*/
+
+    private void messageResetTimerStart() {
+        timer.cancel();;
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                openMessageQueue.clear();
+                log.info(">>>> {} 오픈 메세지 큐 초기화", fname);
+            }
+        }, (counterResetTime) * 1000L);
     }
 }

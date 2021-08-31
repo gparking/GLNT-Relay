@@ -176,9 +176,9 @@ public class AppRunner {
             List<FacilityStatus> alarmList = config.findBreakerList().stream()
                     .filter(info -> {
                         // 현재 시간과 마지막 액션 시간 차이 구하고
-                        long minute = ChronoUnit.MINUTES.between(info.getLastActionTime(), LocalDateTime.now());
-                        // 상태가 30분 이상 지속되었을 때
-                        return minute >= config.getCheckTime() && info.getBarStatus().equals("GATE UP OK");
+                        long seconds = ChronoUnit.SECONDS.between(info.getLastActionTime(), LocalDateTime.now());
+                        // 상태가 ?초 이상 지속되었을 때
+                        return seconds >= config.getCheckTime() && info.getBarStatus().equals("GATE UP OK");
                     })
                     .map(info -> FacilityStatus.gateLongTimeOpen(info.getFacilitiesId()))
                     .collect(Collectors.toList());
@@ -192,7 +192,7 @@ public class AppRunner {
 
     public Trigger getTrigger() {
         log.info(">>>> 차단기 상태 확인 설정된 시간: {}", config.getCheckTime());
-        return new PeriodicTrigger(config.getCheckTime(), TimeUnit.MINUTES);
+        return new PeriodicTrigger(config.getCheckTime(), TimeUnit.SECONDS);
     }
 
 }
