@@ -56,10 +56,12 @@ public class PaymentService{
 
                 // 카드 리더기 연결 상태
                 String cardReaderStatus = Objects.toString(contents.get("icCardReaderFailure"), "");
+                String responseId = Objects.toString(receiveData.get("responseId"), "");
+
                 gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
                         Arrays.asList(
                                 FacilityStatus.payStationStatus(facilityInfo.getDtFacilitiesId(), payStationStatus),
-                                FacilityStatus.icCardReaderStatus(facilityInfo.getDtFacilitiesId(), cardReaderStatus)
+                                FacilityStatus.icCardReaderStatus(facilityInfo.getDtFacilitiesId(), cardReaderStatus, responseId)
                         )
                 ));
                 break;
