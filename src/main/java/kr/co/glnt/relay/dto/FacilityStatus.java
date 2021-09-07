@@ -56,9 +56,8 @@ public class FacilityStatus {
 
     // 정산기에서 헬스체크 정보를 받으면
     // 정산기 상태정보값
-    public static FacilityStatus payStationStatus(String facilitiesId, String healthStatus, String responseId) {
+    public static FacilityStatus payStationStatus(String facilitiesId, String healthStatus) {
         return FacilityStatus.builder()
-                .responseId(responseId)
                 .dtFacilitiesId(facilitiesId)
                 .status(healthStatus.toUpperCase())
                 .failureAlarm("paymentFailure").build();
