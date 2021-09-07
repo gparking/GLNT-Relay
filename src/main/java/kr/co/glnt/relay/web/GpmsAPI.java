@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -201,5 +202,22 @@ public class GpmsAPI {
                 .retrieve()
                 .toBodilessEntity().subscribe();
     }
+
+
+    //todo relay 바코드 할인 정산기 receive data gpms 전송
+    public void sendAdjustmentDataRequest(String id, String data) {
+        webClient.post()
+                .uri("/v1/relay/paystation/aply/discount/{id}",id)
+                .bodyValue(data)
+                .retrieve()
+                .toBodilessEntity().subscribe();
+    }
+
+
+
+
+
+
+
 }
 

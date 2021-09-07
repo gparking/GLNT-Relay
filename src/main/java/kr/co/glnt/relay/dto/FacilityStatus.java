@@ -45,8 +45,9 @@ public class FacilityStatus {
 
     // 정산기에서 헬스체크 정보를 받으면
     // 카드 리더기 상태정보값
-    public static FacilityStatus icCardReaderStatus(String facilitiesId, String healthStatus) {
+    public static FacilityStatus icCardReaderStatus(String facilitiesId, String healthStatus, String responseId) {
         return FacilityStatus.builder()
+                .responseId(responseId)
                 .dtFacilitiesId(facilitiesId)
                 .status(healthStatus.toUpperCase())
                 .failureAlarm("icCardReaderFailure").build();
