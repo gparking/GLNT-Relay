@@ -46,17 +46,31 @@ public class BreakerService {
 
         if (facilityInfo.getGateType().contains("OUT")) {
             exitBreakerTask(facilityInfo, msg);
-        } else {
-            // DetectOut 을 밟았을 경우
-            if (message.contains("DET OUT")) {
-                // 입차 대기 큐에서 하나를 빼고
-                String rebound = facilityInfo.getOpenMessageQueue().poll();
-                if (rebound != null) {
-                    if (facilityInfo.getOpenMessageQueue().size() > 0) {
-                        ByteBuf byteBuf = Unpooled.copiedBuffer(rebound, StandardCharsets.US_ASCII);
-                        channel.writeAndFlush(byteBuf);
-                        log.info(">>>> {}({}) {}대 대기중", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
-                    }
+        }
+        /* 2021-09-07 출차에도 카운터 적용 */
+//        else {
+//            // DetectOut 을 밟았을 경우
+//            if (message.contains("DET OUT")) {
+//                // 입차 대기 큐에서 하나를 빼고
+//                String rebound = facilityInfo.getOpenMessageQueue().poll();
+//                if (rebound != null) {
+//                    if (facilityInfo.getOpenMessageQueue().size() > 0) {
+//                        ByteBuf byteBuf = Unpooled.copiedBuffer(rebound, StandardCharsets.US_ASCII);
+//                        channel.writeAndFlush(byteBuf);
+//                        log.info(">>>> {}({}) {}대 대기중", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
+//                    }
+//                }
+//            }
+//        }
+
+        if (message.contains("DET OUT")) {
+            // 입차 대기 큐에서 하나를 빼고
+            String rebound = facilityInfo.getOpenMessageQueue().poll();
+            if (rebound != null) {
+                if (facilityInfo.getOpenMessageQueue().size() > 0) {
+                    ByteBuf byteBuf = Unpooled.copiedBuffer(rebound, StandardCharsets.US_ASCII);
+                    channel.writeAndFlush(byteBuf);
+                    log.info(">>>> {}({}) {}대 대기중", facilityInfo.getFname(), id, facilityInfo.getOpenMessageQueue().size());
                 }
             }
         }
