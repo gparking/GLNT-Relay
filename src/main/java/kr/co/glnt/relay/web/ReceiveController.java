@@ -83,7 +83,15 @@ public class ReceiveController {
 
         char stx = 0x02, etx = 0x03;
         String msg = String.format("%s%s%s", stx, command, etx);
-        if (command.equals("GATE UP") && facilityInfo.getBarStatus().contains("GATE UP")) {
+
+
+//        if (command.equals("GATE UP") && facilityInfo.getBarStatus().contains("GATE UP")) {
+//            if (Objects.isNull(manual)) {
+//                facilityInfo.addOpenMessage(msg);
+//            }
+//        }
+
+        if (command.equals("GATE UP")) {
             if (Objects.isNull(manual)) {
                 facilityInfo.addOpenMessage(msg);
             }

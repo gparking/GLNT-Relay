@@ -32,7 +32,6 @@ public class GlntIdleHandler extends ChannelDuplexHandler {
             FacilityInfo info = config.findFacilityInfoByHost(host.substring(1));
 
             if (((IdleStateEvent) evt).state() == IdleState.READER_IDLE) {
-                // 전광판은 헬스체크 메세지가 5초에 한번 들어옴.
                 if (info.getCategory().equals("DISPLAY")) {
                     ctx.close();
                     return;

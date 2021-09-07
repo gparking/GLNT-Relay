@@ -8,20 +8,18 @@ import kr.co.glnt.relay.tcp.GlntNettyClient;
 import kr.co.glnt.relay.watcher.GlntFolderWatcher;
 import kr.co.glnt.relay.web.GpmsAPI;
 import kr.co.glnt.relay.web.NgisAPI;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MutablePropertySources;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,7 +39,9 @@ public class AppRunner {
     private NgisAPI ngisAPI;
     private ObjectMapper mapper;
 
+
     private ConfigurableEnvironment env;
+
 
     public AppRunner(GlntNettyClient client, ServerConfig config, GpmsAPI gpmsAPI, NgisAPI ngisAPI, ObjectMapper mapper, ConfigurableEnvironment env) {
         this.client = client;
@@ -54,12 +54,14 @@ public class AppRunner {
 
     @PostConstruct
     public void init() {
-        String[] profiles = env.getActiveProfiles();
+
+
+        String profiles = env.getProperty("server-config.lpr-on");
         initFacilityInfos();
         initDisplayResetMessage();
         initDisplayFormat();
         deviceConnect();
-        if (!profiles[0].equals("local")) lprRunner();
+        if (profiles.equals("ON")) lprRunner();
         startScheduler();
     }
 
@@ -174,9 +176,9 @@ public class AppRunner {
             List<FacilityStatus> alarmList = config.findBreakerList().stream()
                     .filter(info -> {
                         // 현재 시간과 마지막 액션 시간 차이 구하고
-                        long minute = ChronoUnit.MINUTES.between(info.getLastActionTime(), LocalDateTime.now());
-                        // 상태가 30분 이상 지속되었을 때
-                        return minute >= config.getCheckTime() && info.getBarStatus().equals("GATE UP OK");
+                        long seconds = ChronoUnit.SECONDS.between(info.getLastActionTime(), LocalDateTime.now());
+                        // 상태가 ?초 이상 지속되었을 때
+                        return seconds >= config.getCheckTime() && info.getBarStatus().equals("GATE UP OK");
                     })
                     .map(info -> FacilityStatus.gateLongTimeOpen(info.getFacilitiesId()))
                     .collect(Collectors.toList());
@@ -190,7 +192,7 @@ public class AppRunner {
 
     public Trigger getTrigger() {
         log.info(">>>> 차단기 상태 확인 설정된 시간: {}", config.getCheckTime());
-        return new PeriodicTrigger(config.getCheckTime(), TimeUnit.MINUTES);
+        return new PeriodicTrigger(config.getCheckTime(), TimeUnit.SECONDS);
     }
 
 }
