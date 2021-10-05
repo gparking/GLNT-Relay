@@ -73,6 +73,7 @@ public class PaymentService{
 
             case "paymentFailure":
                 log.info(">>>> 정산 실패: {}", message);
+                gpmsAPI.sendPaymentFailureResponse(facilityInfo.getDtFacilitiesId(), message);
                 break;
             default:
                 log.info(">>>> 정산기 메세지 수신: {}", message);

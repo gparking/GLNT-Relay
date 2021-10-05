@@ -109,6 +109,14 @@ public class ServerConfig {
     }
 
     public List<DisplayMessage.DisplayMessageInfo> getDisplayResetMessage(FacilityInfo facilityInfo) {
+        // 양방향 전광판
+        if (facilityInfo.getGateType().equals("IN_OUT")) {
+            if (facilityInfo.getLprType().contains("IN") || facilityInfo.getLprType() == null) {
+                return resetMessage.getIn();
+            } else {
+                return resetMessage.getOut();
+            }
+        }
         if (facilityInfo.getGateType().contains("IN")) {
             return resetMessage.getIn();
         } else {

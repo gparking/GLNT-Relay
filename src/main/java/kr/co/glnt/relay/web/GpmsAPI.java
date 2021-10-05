@@ -183,6 +183,15 @@ public class GpmsAPI {
                 .toBodilessEntity().subscribe();
     }
 
+    // 정산 실패
+    public void sendPaymentFailureResponse(String id, String data) {
+        webClient.post()
+                .uri("/v1/relay/paystation/result/{id}",id)
+                .bodyValue(data)
+                .retrieve()
+                .toBodilessEntity().subscribe();
+    }
+
     // 출차시 미인식 차량 번호 조회
     public void searchVehicle(String id, String data) {
 //        template.postForObject("/v1/relay/paystation/search/vehicle/"+id, data, ResponseDTO.class);
