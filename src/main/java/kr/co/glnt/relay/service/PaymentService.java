@@ -75,6 +75,8 @@ public class PaymentService{
                 log.info(">>>> 정산 실패: {}", message);
                 gpmsAPI.sendPaymentFailureResponse(facilityInfo.getDtFacilitiesId(), message);
                 break;
+            case "aliveCheck":
+                log.info(">>> 정산기 Alive check");
             default:
                 log.info(">>>> 정산기 메세지 수신: {}", message);
                 break;
