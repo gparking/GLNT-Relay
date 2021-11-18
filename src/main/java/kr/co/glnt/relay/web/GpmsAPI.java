@@ -148,6 +148,19 @@ public class GpmsAPI {
                 .subscribe();
     }
 
+    public void sendPaymentHealth(FacilityPayloadWrapper facilityStatusList) {
+        webClient.post()
+                .uri("/v1/relay/paystation/check")
+                .bodyValue(facilityStatusList)
+                .retrieve()
+                .toBodilessEntity()
+                .onErrorResume(err -> {
+                    log.info("<!> device heal check request err : {}", err.getMessage());
+                    return Mono.empty();
+                })
+                .subscribe();
+    }
+
     // 시설물 관련 알림
     public void sendFacilityAlarm(FacilityPayloadWrapper facilityPayloadWrapper) {
 //        template.postForObject("/v1/relay/failure_alarm", facilityPayloadWrapper, ResponseDTO.class);
