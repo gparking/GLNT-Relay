@@ -162,6 +162,9 @@ public class GlntNettyClient {
         channelMap.forEach((host, channel) -> {
             String facilityID = config.findFacilityInfoByHost(host).getFacilitiesId();
             String healthStatus = getHealthStatus(channel);
+//            if (config.findByFacilitiesId("정산기", facilityID).getCategory().equals("PAYMENT") && healthStatus.equals("ERROR")) {
+//                reconnect(config.findFacilityInfoByHost(host).getIp(), config.findFacilityInfoByHost(host).getPort());
+//            }
 
             FacilityStatus facilityStatus = FacilityStatus.deviceHealth(facilityID, healthStatus);
 

@@ -8,6 +8,7 @@ import kr.co.glnt.relay.service.DisplayService;
 import kr.co.glnt.relay.tcp.GlntNettyClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,16 +23,18 @@ public class ReceiveController {
     private final ObjectMapper objectMapper;
     private final GpmsAPI gpmsAPI;
     private final DisplayService displayService;
+    private final Environment env;
 
 
 
     public ReceiveController(GlntNettyClient client, ServerConfig serverConfig,
-                             ObjectMapper objectMapper, GpmsAPI gpmsAPI, DisplayService displayService) {
+                             ObjectMapper objectMapper, GpmsAPI gpmsAPI, DisplayService displayService, Environment env) {
         this.client = client;
         this.serverConfig = serverConfig;
         this.objectMapper = objectMapper;
         this.gpmsAPI = gpmsAPI;
         this.displayService = displayService;
+        this.env = env;
     }
 
     // 설정 정보 리프레시
@@ -143,5 +146,11 @@ public class ReceiveController {
         serverConfig.changeMessageFormat(displayFormat);
         log.info(">>>> {}로 메세지 타입 변경", displayFormat);
         return ResponseEntity.ok(new ResponseDTO(displayFormat));
+    }
+
+    // version 정보
+    @GetMapping("/v1/version")
+    public ResponseEntity<ResponseDTO> getVersion() {
+        return ResponseEntity.ok(new ResponseDTO(env.getProperty("spring.application.version")));
     }
 }

@@ -58,7 +58,7 @@ public class PaymentService{
                 String cardReaderStatus = Objects.toString(contents.get("icCardReaderFailure"), "");
                 String responseId = Objects.toString(receiveData.get("responseId"), "");
 
-                gpmsAPI.sendFacilityHealth(FacilityPayloadWrapper.healthCheckPayload(
+                gpmsAPI.sendPaymentHealth(FacilityPayloadWrapper.healthCheckPayload(
                         Arrays.asList(
                                 FacilityStatus.payStationStatus(facilityInfo.getDtFacilitiesId(), payStationStatus),
                                 FacilityStatus.icCardReaderStatus(facilityInfo.getDtFacilitiesId(), cardReaderStatus, responseId)
@@ -73,7 +73,10 @@ public class PaymentService{
 
             case "paymentFailure":
                 log.info(">>>> 정산 실패: {}", message);
+                gpmsAPI.sendPaymentFailureResponse(facilityInfo.getDtFacilitiesId(), message);
                 break;
+            case "aliveCheck":
+                log.info(">>> 정산기 Alive check");
             default:
                 log.info(">>>> 정산기 메세지 수신: {}", message);
                 break;

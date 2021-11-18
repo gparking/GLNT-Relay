@@ -21,6 +21,7 @@ repositories {
 
 
 dependencies {
+    implementation 'org.projectlombok:lombok:1.18.16'
     implementation 'org.junit.jupiter:junit-jupiter:5.7.0'
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly 'org.projectlombok:lombok'

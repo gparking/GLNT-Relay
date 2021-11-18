@@ -1,2 +1,9 @@
 server:
   port: 9999
+
+spring:
+  profiles:
+    active: local
+  application:
+    name: relay
+    version: 'v1.0.1'
