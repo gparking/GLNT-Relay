@@ -102,7 +102,7 @@ public class DisplayService {
 
         switch (reset){
             case "on":
-                delay = 5 * 1000;
+                delay = 7 * 1000;
                 break;
             case "off":
                 facilityInfo.setCmdStatus(CmdStatus.EXIT_STANDBY);
@@ -174,7 +174,10 @@ public class DisplayService {
             ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.forName("euc-kr"));
             ctx.channel().writeAndFlush(byteBuf);
 
-            log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
+            if (info.getCmdStatus() != CmdStatus.NORMAL) {
+                log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
+            }
+            //log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
         });
     }
 
