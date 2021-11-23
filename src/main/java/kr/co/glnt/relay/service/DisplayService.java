@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 public class DisplayService {
@@ -81,7 +83,7 @@ public class DisplayService {
         Map<String, Channel> channelMap = GlntNettyClient.getChannelMap();
 
         messageList.forEach(msg -> {
-            log.info(">>>> {}({}) 메세지 전송: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
+            log.info(">>>> {}({}) 메세지 전송-1: {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), msg);
 
             String host = facilityInfo.generateHost();
 
@@ -124,6 +126,7 @@ public class DisplayService {
             List<DisplayMessage.DisplayMessageInfo> messages = serverConfig.getDisplayResetMessage(facilityInfo);
             @Override
             public void run() {
+                //log.info(">>>> reset display format: {} {}", facilityInfo, messages);
 
                 sendMessage(facilityInfo, serverConfig.generateMessageList(messages));
                 displayTimer.remove(facilityInfo.getDtFacilitiesId());
@@ -175,7 +178,7 @@ public class DisplayService {
             ctx.channel().writeAndFlush(byteBuf);
 
             if (info.getCmdStatus() != CmdStatus.NORMAL) {
-                log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
+                log.info(">>>> {}({}) 메세지 전송-2: {}", info.getFname(), info.getDtFacilitiesId(), msg);
             }
             //log.info(">>>> {}({}) 메세지 전송: {}", info.getFname(), info.getDtFacilitiesId(), msg);
         });
@@ -187,20 +190,25 @@ public class DisplayService {
 
         List<FacilityInfo> facilityList = serverConfig.getFacilityList();
 
-        FacilityInfo display = facilityList
+        List<FacilityInfo> displays = facilityList
                 .stream()
                 .filter(facility -> facility.getGateId().equals(facilityInfo.getGateId()))
-                .filter(facilityGateId -> facilityGateId.getCategory().equals("DISPLAY"))
-                .findFirst().get();
+                .filter(facilityGateId -> facilityGateId.getCategory().equals("DISPLAY")).collect(Collectors.toList());
+//                .filter(facility-> facilityInfo.getGateType().equals("IN_OUT") && facilityInfo.)
+//                .findFirst().get();
 
+        displays.forEach ( display -> {
+            //if (facilityInfo.getGateType().equals("IN_OUT")) {
+                List<DisplayMessage.DisplayMessageInfo> displayResetMessage = serverConfig.getDisplayResetMessage(display);
+                List<String> messageList = serverConfig.generateMessageList(displayResetMessage);
 
-        List<DisplayMessage.DisplayMessageInfo> displayResetMessage = serverConfig.getDisplayResetMessage(facilityInfo);
-        List<String> messageList = serverConfig.generateMessageList(displayResetMessage);
+                log.info(">>>> exitResetMessage {}({}) 메세지 전송: {}", display.getFname(), display.getDtFacilitiesId(), messageList);
+                // reset target facility display -> facilityInfo 변경
+                sendMessage(display,messageList);
 
-
-        sendMessage(display,messageList);
-
-        display.setCmdStatus(CmdStatus.NORMAL);
+                display.setCmdStatus(CmdStatus.NORMAL);
+            //}
+        });
     }
 
 
