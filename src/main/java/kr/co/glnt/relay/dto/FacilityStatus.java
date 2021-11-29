@@ -63,6 +63,43 @@ public class FacilityStatus {
                 .failureAlarm("paymentFailure").build();
     }
 
+    // 정산기에서 헬스체크 정보를 받으면
+    // 프린터 상태정보값
+    public static FacilityStatus printStatus(String facilitiesId, String healthStatus) {
+        return FacilityStatus.builder()
+                .dtFacilitiesId(facilitiesId)
+                .status(healthStatus.toUpperCase())
+                .failureAlarm("printFailure").build();
+    }
+
+    // 정산기에서 헬스체크 정보를 받으면
+    // 프린터 용지 lack 상태 정보값
+    public static FacilityStatus printPaperLackStatus(String facilitiesId, String healthStatus) {
+        return FacilityStatus.builder()
+                .dtFacilitiesId(facilitiesId)
+                .status(healthStatus.toUpperCase())
+                .failureAlarm("printPaperLack").build();
+    }
+
+    // 정산기에서 헬스체크 정보를 받으면
+    // 프린터 용지 lack 상태 정보값
+    public static FacilityStatus printOpenDoorStatus(String facilitiesId, String healthStatus) {
+        return FacilityStatus.builder()
+                .dtFacilitiesId(facilitiesId)
+                .status(healthStatus.toUpperCase())
+                .failureAlarm("printOpenDoor").build();
+    }
+
+    // 정산기에서 헬스체크 정보를 받으면
+    // 프린터 용지 상태 정보값
+    public static FacilityStatus noPrintPaperStatus(String facilitiesId, String healthStatus, String responseId) {
+        return FacilityStatus.builder()
+                .responseId(responseId)
+                .dtFacilitiesId(facilitiesId)
+                .status(healthStatus.toUpperCase())
+                .failureAlarm("noPrintPaper").build();
+    }
+
     // 차단기 Action OK 보내기
     public static FacilityStatus breakerAction(String facilitiesId, String action) {
         return FacilityStatus.builder()
