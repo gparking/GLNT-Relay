@@ -121,13 +121,14 @@ public class Exit extends Breaker {
                         if (!isEqualsCarNumber(carInfos)) {
                             // 출차 재요청.
                             gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
-                        } else {
-                            CommonUtils.deleteImageFile(carInfo.getFullPath());
                         }
+                        //else {
+                        //    CommonUtils.deleteImageFile(carInfo.getFullPath());
+                        //}
                     } else {
                         CarInfo firstCar = carInfos.get(0);
                         if (!firstCar.ocrValidate()) {
-                            // 출차 요청.
+                            // 1번 미출차 요청.
                             gpmsAPI.requestExitCar(eventGroup.getKey(), firstCar);
                         }
                     }
@@ -138,6 +139,9 @@ public class Exit extends Breaker {
                         gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
                     }
                 }
+                carInfos.forEach( carInfo ->
+                        CommonUtils.deleteImageFile(carInfo.getFullPath())
+                );
             }
         };
     }
