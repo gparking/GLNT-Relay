@@ -42,11 +42,29 @@ public class Exit extends Breaker {
                 // 1초후 비교로직 실행
                 startTimer();
 
+                /*
+                  출차 로직은 다음과 같이 처리
+                  1. 1번 사진 정상인식만 경우 출차 이벤트
+                  2. 1s 대기
+                  3. (보조LPR유)
+                      2번 사진 미인식/오인식
+                      - 1번 사진 미인식/오인식 인 경우 1번 사진 출차 이벤트
+                        1번 사진 정상인식 인 경우 step 1에서 출차 기 처리 되어 skip
+                      2번 사진 정상인식
+                      - 1번 사진 미인식/오인식 인 경우 skip
+                        1번 사진 정상인식 && 2번 사진과 1번 사진 차량번호 상이 한 경우 2번 사진 출차 이벤트
+                     (보조LPR무)
+                      1번 미인식/오인식 출차 이벤트
+                 */
+
                 // 새로운 스레드를 생성하여
-                // GPMS 서버에 차량 정보 생성 후 전송
-                new Thread(() -> {
-                    gpmsAPI.requestExitCar(group.getKey(), generatedCarInfo(eventInfo));
-                }).start();
+                // 차량 번호 인식 된 경우에만 GPMS 서버에 차량 정보 생성 후 전송(2021.12.18 by lucy)
+                if (carInfo.ocrValidate()) {
+                    new Thread(() -> {
+                        gpmsAPI.requestExitCar(group.getKey(), generatedCarInfo(eventInfo));
+                    }).start();
+                }
+
 
             } else {
                 // 신규 입차시 생성된 그룹에 이벤트 정보를 등록.
@@ -97,7 +115,6 @@ public class Exit extends Breaker {
 
                     // OCR 이 정상 처리된 차량인지 확인
                     if (carInfo.ocrValidate()) {
-
                         // 정상 처리된 차량일 경우
                         // 차량 리스트를 순회하며
                         // 같은 차량 번호가 아닐 때
@@ -107,6 +124,18 @@ public class Exit extends Breaker {
                         } else {
                             CommonUtils.deleteImageFile(carInfo.getFullPath());
                         }
+                    } else {
+                        CarInfo firstCar = carInfos.get(0);
+                        if (!firstCar.ocrValidate()) {
+                            // 출차 요청.
+                            gpmsAPI.requestExitCar(eventGroup.getKey(), firstCar);
+                        }
+                    }
+                } else {
+                    // 보조 LPR 이 없을 경우 미인식/오인식 데이터에 대해서는 출차 전방에서 GPMS로 출차 이벤트 발생 안했기 때문에 여기서 처리
+                    CarInfo carInfo = carInfos.get(carInfos.size() - 1);
+                    if (!carInfo.ocrValidate()) {
+                        gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
                     }
                 }
             }
