@@ -61,7 +61,7 @@ public class Entrance extends Breaker {
             }
         }
         catch (Exception e) {
-            log.error("입차 - 전방 에러", e.getMessage());
+            log.error("입차 - 전방 에러 {}", e.getMessage());
         }
     }
 

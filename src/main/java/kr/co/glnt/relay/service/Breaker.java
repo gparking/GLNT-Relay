@@ -55,7 +55,7 @@ public abstract class Breaker {
      */
     protected List<CarInfo> getCurrentGroupEventList(EventInfoGroup eventGroup) {
         return eventGroup.getEventList().stream()
-                .map(eventInfo -> eventInfo.getCarInfo())
+                .map(EventInfo::getCarInfo)
                 .collect(Collectors.toList());
     }
 

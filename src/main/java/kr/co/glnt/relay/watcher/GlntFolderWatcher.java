@@ -51,19 +51,22 @@ public class GlntFolderWatcher implements Runnable {
     @Override
     public void run() {
         Breaker breaker = BreakerFactory.getInstance(facilityInfo);
-        for (;;) {
+        while (true) {
             WatchKey key = null;
             key = service.take();
             List<WatchEvent<?>> events = key.pollEvents();
 
             for (WatchEvent<?> event : events) {
+                log.info(">>>> {}({}) 파일 watch event : {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), getFullPath(event));
+                //파일 정합성 check
+                String fullPath = getFullPath(event);
                 WatchEvent.Kind<?> kind = event.kind();
+
                 if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
+                    log.info(">>>> {}({}) 파일 watch event create not : {}, {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath, kind);
                     continue;
                 }
 
-                //파일 정합성 check
-                String fullPath = getFullPath(event);
                 if (!isValidationImageFile(Paths.get(fullPath))) continue;
 
                 log.info(">>>> {}({}) 파일 생성: {}, size: {} bytes", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath, fullPath.length());
@@ -145,22 +148,22 @@ public class GlntFolderWatcher implements Runnable {
             }
             catch (IOException e)
             {
-                log.warn("unable to create file, " + e.getMessage());
+                log.warn("unable to create file {}, {}", path, e.getMessage());
 
-                try
-                {
+                try {
                     // delete problematic file from watch directory
-                    log.info("deleting " + path);
+                    //log.error("deleting " + path);
                     Files.delete(path);
-                }
-                catch (IOException ioe)
-                {
+                } catch (IOException ioe) {
                     // ignore
                 }
+
                 return false;
             }
-        } else
+        } else {
+            log.error("isValidationImageFile return false {}", path);
             return false;
+        }
     }
 
     void waitForNonEmptyFile(final Path path) throws IOException

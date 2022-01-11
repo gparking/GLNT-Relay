@@ -61,7 +61,7 @@ public class Exit extends Breaker {
                 // 차량 번호 인식 된 경우에만 GPMS 서버에 차량 정보 생성 후 전송(2021.12.18 by lucy)
                 if (carInfo.ocrValidate()) {
                     new Thread(() -> {
-                        gpmsAPI.requestExitCar(group.getKey(), generatedCarInfo(eventInfo));
+                        gpmsAPI.requestExitCar(group.getKey(), carInfo);
                     }).start();
                 }
 
@@ -106,21 +106,20 @@ public class Exit extends Breaker {
                 EventInfoGroup eventGroup = pollExitQueue();
                 List<CarInfo> carInfos = getCurrentGroupEventList(eventGroup);
 
+                // 마지막에 찍힌 차량 정보
+                CarInfo lastCar = carInfos.get(carInfos.size() - 1);
+
                 // 그룹내에 등록된 차량 정보가 두개 이상일 때
                 // (보조 LPR 이 달려있을 경우)
                 if (carInfos.size() > 1) {
-
-                    // 마지막에 찍힌 차량 정보를 가져와
-                    CarInfo carInfo = carInfos.get(carInfos.size() - 1);
-
                     // OCR 이 정상 처리된 차량인지 확인
-                    if (carInfo.ocrValidate()) {
+                    if (lastCar.ocrValidate()) {
                         // 정상 처리된 차량일 경우
                         // 차량 리스트를 순회하며
                         // 같은 차량 번호가 아닐 때
                         if (!isEqualsCarNumber(carInfos)) {
                             // 출차 재요청.
-                            gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
+                            gpmsAPI.requestExitCar(eventGroup.getKey(), lastCar);
                         }
                         //else {
                         //    CommonUtils.deleteImageFile(carInfo.getFullPath());
@@ -134,11 +133,11 @@ public class Exit extends Breaker {
                     }
                 } else {
                     // 보조 LPR 이 없을 경우 미인식/오인식 데이터에 대해서는 출차 전방에서 GPMS로 출차 이벤트 발생 안했기 때문에 여기서 처리
-                    CarInfo carInfo = carInfos.get(carInfos.size() - 1);
-                    if (!carInfo.ocrValidate()) {
-                        gpmsAPI.requestExitCar(eventGroup.getKey(), carInfo);
+                    if (!lastCar.ocrValidate()) {
+                        gpmsAPI.requestExitCar(eventGroup.getKey(), lastCar);
                     }
                 }
+
                 carInfos.forEach( carInfo ->
                         CommonUtils.deleteImageFile(carInfo.getFullPath())
                 );
