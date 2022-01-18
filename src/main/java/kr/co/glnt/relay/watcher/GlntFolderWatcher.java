@@ -14,6 +14,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,18 +53,34 @@ public class GlntFolderWatcher implements Runnable {
     public void run() {
         Breaker breaker = BreakerFactory.getInstance(facilityInfo);
         while (true) {
-            WatchKey key = null;
-            key = service.take();
-            List<WatchEvent<?>> events = key.pollEvents();
+//            // key = null;
+//            WatchKey key = service.take();
+//            // List<WatchEvent<?>> events = key.pollEvents();
 
-            for (WatchEvent<?> event : events) {
-                log.info(">>>> {}({}) 파일 watch event : {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), getFullPath(event));
-                //파일 정합성 check
-                String fullPath = getFullPath(event);
+            WatchKey key = null;
+
+            try {
+                key = service.take();
+            } catch (InterruptedException e) {
+                log.error("Waiting for event interrupted");
+                continue;
+            }
+
+            try {
+                Thread.sleep(TimeUnit.MILLISECONDS.toMillis(30L));
+            } catch (InterruptedException e) {
+                log.error("Thread sleep error");
+            }
+
+            for (WatchEvent<?> event : key.pollEvents()) {
                 WatchEvent.Kind<?> kind = event.kind();
+                String fullPath = getFullPath(event);
+
+                //watch event log
+                log.info(">>>> {}({}) New watch event {} count {} : fileName {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), event.kind(), event.count(), getFullPath(event));
 
                 if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
-                    log.info(">>>> {}({}) 파일 watch event create not : {}, {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath, kind);
+                    log.info(">>>> {}({}) New watch event {} not create : fileName {} ", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(),kind, fullPath);
                     continue;
                 }
 
@@ -107,7 +124,11 @@ public class GlntFolderWatcher implements Runnable {
                         break;
                 }
             }
-            key.reset();
+            boolean valid = key.reset();
+            if (!valid) {
+                log.error("WatchKey is no longer valid, stopping WatchService");
+                break;
+            }
         }
     }
 
