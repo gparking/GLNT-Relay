@@ -6,6 +6,7 @@ import kr.co.glnt.relay.dto.CarInfo;
 import kr.co.glnt.relay.dto.EventInfo;
 import kr.co.glnt.relay.dto.EventInfoGroup;
 import kr.co.glnt.relay.dto.FacilityInfo;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -25,22 +26,24 @@ public class Exit extends Breaker {
 
     @Override
     public void startProcessing(EventInfo eventInfo) {
-        long currentTime = eventInfo.getCreatedTime();
-        CarInfo carInfo = generatedCarInfo(eventInfo);
-        eventInfo.setCarInfo(carInfo);
-        synchronized (this) {
+        try {
+            long currentTime = eventInfo.getCreatedTime();
+            CarInfo carInfo = generatedCarInfo(eventInfo);
+            eventInfo.setCarInfo(carInfo);
 
-            // 입차 프로세스와 동일하게
-            // 신규 차량일 경우 새로운 그룹을 생성
-            // 차량 정보를 GPMS 서버에 전송
-            if (isNewCarEnters(currentTime)) {
-                lastRegTime = currentTime;
+            synchronized (this) {
 
-                // 새로운 그룹 생성
-                EventInfoGroup group = addNewGroupToExitQueue(eventInfo);
+                // 입차 프로세스와 동일하게
+                // 신규 차량일 경우 새로운 그룹을 생성
+                // 차량 정보를 GPMS 서버에 전송
+                if (isNewCarEnters(currentTime)) {
+                    lastRegTime = currentTime;
 
-                // 1초후 비교로직 실행
-                startTimer();
+                    // 새로운 그룹 생성
+                    EventInfoGroup group = addNewGroupToExitQueue(eventInfo);
+
+                    // 1초후 비교로직 실행
+                    startTimer();
 
                 /*
                   출차 로직은 다음과 같이 처리
@@ -57,19 +60,21 @@ public class Exit extends Breaker {
                       1번 미인식/오인식 출차 이벤트
                  */
 
-                // 새로운 스레드를 생성하여
-                // 차량 번호 인식 된 경우에만 GPMS 서버에 차량 정보 생성 후 전송(2021.12.18 by lucy)
-                if (carInfo.ocrValidate()) {
-                    new Thread(() -> {
-                        gpmsAPI.requestExitCar(group.getKey(), carInfo);
-                    }).start();
+                    // 새로운 스레드를 생성하여
+                    // 차량 번호 인식 된 경우에만 GPMS 서버에 차량 정보 생성 후 전송(2021.12.18 by lucy)
+                    if (carInfo.ocrValidate()) {
+                        new Thread(() -> {
+                            gpmsAPI.requestExitCar(group.getKey(), carInfo);
+                            carInfo.setRequest(true);
+                        }).start();
+                    }
+                } else {
+                    // 신규 입차시 생성된 그룹에 이벤트 정보를 등록.
+                    addElementToExitGroup(eventInfo);
                 }
-
-
-            } else {
-                // 신규 입차시 생성된 그룹에 이벤트 정보를 등록.
-                addElementToExitGroup(eventInfo);
             }
+        } catch (Exception e) {
+            log.error("출차 - 전방 에러 {}", e.getMessage());
         }
     }
 
@@ -101,6 +106,7 @@ public class Exit extends Breaker {
 
     protected TimerTask task() {
         return new TimerTask() {
+            @SneakyThrows
             @Override
             public void run() {
                 EventInfoGroup eventGroup = pollExitQueue();
@@ -120,6 +126,7 @@ public class Exit extends Breaker {
                         if (!isEqualsCarNumber(carInfos)) {
                             // 출차 재요청.
                             gpmsAPI.requestExitCar(eventGroup.getKey(), lastCar);
+                            lastCar.setRequest(true);
                         }
                         //else {
                         //    CommonUtils.deleteImageFile(carInfo.getFullPath());
@@ -129,12 +136,14 @@ public class Exit extends Breaker {
                         if (!firstCar.ocrValidate()) {
                             // 1번 미출차 요청.
                             gpmsAPI.requestExitCar(eventGroup.getKey(), firstCar);
+                            firstCar.setRequest(true);
                         }
                     }
                 } else {
                     // 보조 LPR 이 없을 경우 미인식/오인식 데이터에 대해서는 출차 전방에서 GPMS로 출차 이벤트 발생 안했기 때문에 여기서 처리
                     if (!lastCar.ocrValidate()) {
                         gpmsAPI.requestExitCar(eventGroup.getKey(), lastCar);
+                        lastCar.setRequest(true);
                     }
                 }
 

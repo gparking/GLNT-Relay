@@ -54,6 +54,7 @@ public class Entrance extends Breaker {
                     // 차량정보를 GPMS 서버에 전송.
                     new Thread(() -> {
                         gpmsAPI.requestEntranceCar("전방", group.getKey(), carInfo);
+                        carInfo.setRequest(true);
                     }).start();
                 } else {
                     addElementToFrontGroup(eventInfo);
@@ -99,16 +100,31 @@ public class Entrance extends Breaker {
                 // 그룹내에 등록된 차량 정보가 두개 이상일 때
                 // (보조 LPR 이 달려있을 경우)
                 if (carInfos.size() > 1) {
+//                    log.info("Entrance carInfos {}", carInfos);
+//                    CarInfo firstCar = carInfos.get(0);
+//
+                    for (int i = 1; i < carInfos.size(); i++) {
+                        if (isEqualsCarNumber(carInfos.get(i), carInfos)) {
+                            CommonUtils.deleteImageFile(carInfos.get(i).getFullPath());
+                        } else {
+                            gpmsAPI.requestEntranceCar("전방", eventGroup.getKey(), carInfos.get(i));
+                            carInfos.get(i).setRequest(true);
+                        }
+                    }
                     // 메인 LPR 에서 검출한 차량번호와
                     // 동일하면 파일 삭제
                     // 아니면 전송.
-                    if (isEqualsCarNumber(carInfos)) {
-                        CommonUtils.deleteImageFile(carInfos.get(carInfos.size()-1).getFullPath());
-                    } else {
-                        gpmsAPI.requestEntranceCar("전방", eventGroup.getKey(), carInfos.get(carInfos.size()-1));
-                    }
+                    // 보조 카메라 1개만 처리 될때
+//                    if (isEqualsCarNumber(carInfos)) {
+//                        CommonUtils.deleteImageFile(carInfos.get(carInfos.size()-1).getFullPath());
+//                    } else {
+//                        gpmsAPI.requestEntranceCar("전방", eventGroup.getKey(), carInfos.get(carInfos.size()-1));
+//                    }
                 }
 
+                carInfos.forEach( carInfo ->
+                        CommonUtils.deleteImageFile(carInfo.getFullPath())
+                );
             }
         };
     }

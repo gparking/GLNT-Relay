@@ -101,6 +101,31 @@ public abstract class Breaker {
         return false;
     }
 
+    protected boolean isEqualsCarNumber(CarInfo target, List<CarInfo> carInfos) {
+        //return !carInfo.ocrValidate();
+        // 정상차량이 아니면 같은 차량으로 처리한다.
+        if (!target.ocrValidate()) {
+            return true;
+        }
+        // car list 에서 확인
+        for (CarInfo carInfo : carInfos.stream().filter(carInfo -> !carInfo.getFullPath().equals(target.getFullPath()) && carInfo.isRequest()).collect(Collectors.toList())) {
+            if (target.getNumber().equals(carInfo.getNumber())) return true;
+        }
+        //CarInfo firstCar = carInfos.get(0);
+
+//        for (int i = 1; i < carInfos.size(); i++) {
+//            // 정상차량이 아니면 같은 차량으로 처리한다.
+//            if (!carInfos.get(i).ocrValidate()) {
+//                return true;
+//            }
+//
+//            if (firstCar.getNumber().equals(carInfos.get(i).getNumber())) {
+//                return true;
+//            }
+//        }
+        return false;
+    }
+
 
     /**
      * 정상인식 된 차량들 중에 더 많이 찍힌 차량번호를 리턴.

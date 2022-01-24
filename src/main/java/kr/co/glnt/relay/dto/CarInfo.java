@@ -13,6 +13,7 @@ public class CarInfo {
     private String fullPath;        // 사진 전체경로
     private long inDate;            // 입차 시간.
     private String dtFacilitiesId;    // 들어온 게이트 아이디.
+    private boolean request;
 
     /**
      * OCR 결과 코드를 비교해 성공인지 실패인지 확인
