@@ -42,7 +42,7 @@ public class GpmsAPI {
      */
     @Retryable(backoff = @Backoff(delay = 0))
     public List<FacilityInfo> getParkinglotData(FacilityInfoPayload facilityInfoPayload) {
-        ResponseEntity<ResponseDTO> response = template.postForEntity("/v1/parkinglot/facility/list", facilityInfoPayload, ResponseDTO.class);
+        ResponseEntity<ResponseDTO> response = template.postForEntity("/api/v1/parkinglot/facility/list", facilityInfoPayload, ResponseDTO.class);
         if (Objects.isNull(response)) return Collections.emptyList();
         HttpStatus status = HttpStatus.resolve(response.getStatusCodeValue());
         if (status == HttpStatus.OK) {
@@ -59,7 +59,7 @@ public class GpmsAPI {
 
     // Display init message 가져오기
     public ResponseDTO requestDisplayInitMessage() {
-        return template.getForObject("/v1/relay/display/init/message", ResponseDTO.class);
+        return template.getForObject("/api/v1/relay/display/init/message", ResponseDTO.class);
     }
 
     public ResponseDTO requestDisplayFormat() {
