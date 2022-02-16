@@ -90,7 +90,7 @@ public class GpmsAPI {
 //            CommonUtils.deleteImageFile(carInfo.getFullPath());
 //        }
         Mono<ResponseDTO> response = webClient.post()
-                .uri("/api/v1/inout/parkin")
+                .uri("/api/v1/relay/parkIn")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(ResponseDTO.class)
@@ -117,7 +117,7 @@ public class GpmsAPI {
 //        }
 //
         Mono<ResponseDTO> response = webClient.post()
-                .uri("/api/v1/inout/parkout")
+                .uri("/api/v1/relay/parkOut")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(ResponseDTO.class)
