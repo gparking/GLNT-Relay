@@ -57,7 +57,7 @@ public class NgisAPI {
     public CarInfo requestOCR(String imagePath) {
         File file = new File(imagePath);
         long currentSize = file.length();
-        log.info(">>>> event fileSize: {}bytes", currentSize);
+        log.info(">>>> event {} fileSize: {} bytes", imagePath, currentSize);
 
         long startTime = System.currentTimeMillis();
         long timeoutNanos = 500;
@@ -74,7 +74,7 @@ public class NgisAPI {
             }
         }
 
-        log.info(">>>> ocr fileSize: {}bytes", file.length());
+        log.info(">>>> ocr {} fileSize: {} bytes", imagePath, file.length());
 
         ResponseDTO response = template.post()
                 .uri("/ocr")
@@ -83,7 +83,7 @@ public class NgisAPI {
                 .bodyToMono(ResponseDTO.class)
                 .block();
 
-        log.info(">>>> ngis ocr response: {}", response);
+        log.info(">>>> {} ngis ocr response: {}", imagePath, response);
         if (hasError(response)) {
             return null;
         }

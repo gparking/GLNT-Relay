@@ -14,6 +14,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,19 +52,38 @@ public class GlntFolderWatcher implements Runnable {
     @Override
     public void run() {
         Breaker breaker = BreakerFactory.getInstance(facilityInfo);
-        for (;;) {
-            WatchKey key = null;
-            key = service.take();
-            List<WatchEvent<?>> events = key.pollEvents();
+        while (true) {
+//            // key = null;
+//            WatchKey key = service.take();
+//            // List<WatchEvent<?>> events = key.pollEvents();
 
-            for (WatchEvent<?> event : events) {
+            WatchKey key = null;
+
+            try {
+                key = service.take();
+            } catch (InterruptedException e) {
+                log.error("Waiting for event interrupted");
+                continue;
+            }
+
+            try {
+                Thread.sleep(TimeUnit.MILLISECONDS.toMillis(30L));
+            } catch (InterruptedException e) {
+                log.error("Thread sleep error");
+            }
+
+            for (WatchEvent<?> event : key.pollEvents()) {
                 WatchEvent.Kind<?> kind = event.kind();
+                String fullPath = getFullPath(event);
+
+                //watch event log
+                log.info(">>>> {}({}) New watch event {} count {} : fileName {}", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), event.kind(), event.count(), getFullPath(event));
+
                 if (!kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
+                    log.info(">>>> {}({}) New watch event {} not create : fileName {} ", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(),kind, fullPath);
                     continue;
                 }
 
-                //파일 정합성 check
-                String fullPath = getFullPath(event);
                 if (!isValidationImageFile(Paths.get(fullPath))) continue;
 
                 log.info(">>>> {}({}) 파일 생성: {}, size: {} bytes", facilityInfo.getFname(), facilityInfo.getDtFacilitiesId(), fullPath, fullPath.length());
@@ -104,7 +124,11 @@ public class GlntFolderWatcher implements Runnable {
                         break;
                 }
             }
-            key.reset();
+            boolean valid = key.reset();
+            if (!valid) {
+                log.error("WatchKey is no longer valid, stopping WatchService");
+                break;
+            }
         }
     }
 
@@ -145,22 +169,22 @@ public class GlntFolderWatcher implements Runnable {
             }
             catch (IOException e)
             {
-                log.warn("unable to create file, " + e.getMessage());
+                log.warn("unable to create file {}, {}", path, e.getMessage());
 
-                try
-                {
+                try {
                     // delete problematic file from watch directory
-                    log.info("deleting " + path);
+                    //log.error("deleting " + path);
                     Files.delete(path);
-                }
-                catch (IOException ioe)
-                {
+                } catch (IOException ioe) {
                     // ignore
                 }
+
                 return false;
             }
-        } else
+        } else {
+            log.error("isValidationImageFile return false {}", path);
             return false;
+        }
     }
 
     void waitForNonEmptyFile(final Path path) throws IOException

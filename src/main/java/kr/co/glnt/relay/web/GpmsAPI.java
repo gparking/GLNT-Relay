@@ -42,7 +42,7 @@ public class GpmsAPI {
      */
     @Retryable(backoff = @Backoff(delay = 0))
     public List<FacilityInfo> getParkinglotData(FacilityInfoPayload facilityInfoPayload) {
-        ResponseEntity<ResponseDTO> response = template.postForEntity("/v1/parkinglot/facility/list", facilityInfoPayload, ResponseDTO.class);
+        ResponseEntity<ResponseDTO> response = template.postForEntity("/api/v1/parkinglot/facility/list", facilityInfoPayload, ResponseDTO.class);
         if (Objects.isNull(response)) return Collections.emptyList();
         HttpStatus status = HttpStatus.resolve(response.getStatusCodeValue());
         if (status == HttpStatus.OK) {
@@ -59,12 +59,12 @@ public class GpmsAPI {
 
     // Display init message 가져오기
     public ResponseDTO requestDisplayInitMessage() {
-        return template.getForObject("/v1/relay/display/init/message", ResponseDTO.class);
+        return template.getForObject("/api/v1/relay/display/init/message", ResponseDTO.class);
     }
 
     public ResponseDTO requestDisplayFormat() {
         return webClient.get()
-                .uri("/v1/relay/display/info")
+                .uri("/api/v1/relay/display/info")
                 .retrieve()
                 .bodyToMono(ResponseDTO.class)
                 .onErrorResume(err -> {
@@ -90,7 +90,7 @@ public class GpmsAPI {
 //            CommonUtils.deleteImageFile(carInfo.getFullPath());
 //        }
         Mono<ResponseDTO> response = webClient.post()
-                .uri("/v1/inout/parkin")
+                .uri("/api/v1/relay/parkIn")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(ResponseDTO.class)
@@ -117,7 +117,7 @@ public class GpmsAPI {
 //        }
 //
         Mono<ResponseDTO> response = webClient.post()
-                .uri("/v1/inout/parkout")
+                .uri("/api/v1/relay/parkOut")
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(ResponseDTO.class)
@@ -137,7 +137,7 @@ public class GpmsAPI {
     public void sendFacilityHealth(FacilityPayloadWrapper facilityStatusList) {
 //        template.postForObject("/v1/relay/health_check", facilityStatusList, ResponseDTO.class);
         webClient.post()
-                .uri("/v1/relay/health_check")
+                .uri("/api/v1/relay/health_check")
                 .bodyValue(facilityStatusList)
                 .retrieve()
                 .toBodilessEntity()
@@ -150,7 +150,7 @@ public class GpmsAPI {
 
     public void sendPaymentHealth(FacilityPayloadWrapper facilityStatusList) {
         webClient.post()
-                .uri("/v1/relay/paystation/check")
+                .uri("/api/v1/relay/paystation/check")
                 .bodyValue(facilityStatusList)
                 .retrieve()
                 .toBodilessEntity()
@@ -165,7 +165,7 @@ public class GpmsAPI {
     public void sendFacilityAlarm(FacilityPayloadWrapper facilityPayloadWrapper) {
 //        template.postForObject("/v1/relay/failure_alarm", facilityPayloadWrapper, ResponseDTO.class);
         webClient.post()
-                .uri("/v1/relay/failure_alarm")
+                .uri("/api/v1/relay/failure_alarm")
                 .bodyValue(facilityPayloadWrapper)
                 .retrieve()
                 .toBodilessEntity().subscribe();
@@ -175,7 +175,7 @@ public class GpmsAPI {
     public void sendStatusNoti(FacilityPayloadWrapper object) {
 //        template.postForObject("/v1/relay/status_noti", object, ResponseDTO.class);
         webClient.post()
-                .uri("/v1/relay/status_noti")
+                .uri("/api/v1/relay/status_noti")
                 .bodyValue(object)
                 .retrieve()
                 .toBodilessEntity()
@@ -190,7 +190,7 @@ public class GpmsAPI {
     public void sendPaymentResponse(String id, String data) {
 //        template.postForObject("/v1/relay/paystation/result/"+id, data, ResponseDTO.class);
         webClient.post()
-                .uri("/v1/relay/paystation/result/{id}", id)
+                .uri("/api/v1/relay/paystation/result/{id}", id)
                 .bodyValue(data)
                 .retrieve()
                 .toBodilessEntity().subscribe();
@@ -199,7 +199,7 @@ public class GpmsAPI {
     // 정산 실패
     public void sendPaymentFailureResponse(String id, String data) {
         webClient.post()
-                .uri("/v1/relay/paystation/result/{id}",id)
+                .uri("/api/v1/relay/paystation/result/{id}",id)
                 .bodyValue(data)
                 .retrieve()
                 .toBodilessEntity().subscribe();
@@ -209,7 +209,7 @@ public class GpmsAPI {
     public void searchVehicle(String id, String data) {
 //        template.postForObject("/v1/relay/paystation/search/vehicle/"+id, data, ResponseDTO.class);
         webClient.post()
-                .uri("/v1/relay/paystation/search/vehicle/{id}", id)
+                .uri("/api/v1/relay/paystation/search/vehicle/{id}", id)
                 .bodyValue(data)
                 .retrieve()
                 .toBodilessEntity().subscribe();
@@ -219,7 +219,7 @@ public class GpmsAPI {
     public void sendPayment(String id, String data) {
 //        template.postForObject("/v1/relay/paystation/request/adjustment/"+id, data, ResponseDTO.class);
         webClient.post()
-                .uri("/v1/relay/paystation/request/adjustment/{id}", id)
+                .uri("/api/v1/relay/paystation/request/adjustment/{id}", id)
                 .bodyValue(data)
                 .retrieve()
                 .toBodilessEntity().subscribe();
@@ -229,7 +229,7 @@ public class GpmsAPI {
     //todo relay 바코드 할인 정산기 receive data gpms 전송
     public void sendAdjustmentDataRequest(String id, String data) {
         webClient.post()
-                .uri("/v1/relay/paystation/aply/discount/{id}",id)
+                .uri("/api/v1/relay/paystation/aply/discount/{id}",id)
                 .bodyValue(data)
                 .retrieve()
                 .toBodilessEntity().subscribe();
